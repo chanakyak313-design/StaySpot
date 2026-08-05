@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+@import "leaflet/dist/leaflet.css";
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #14213D;
+  --color-ink-light: #24345C;
+  --color-marigold: #FFC300;
+  --color-marigold-dark: #E6AF00;
+  --color-coral: #FF5A4E;
+  --color-coral-dark: #E64438;
+  --color-paper: #FFFFFF;
+  --color-skytape: #EAF3FF;
+  --color-mint: #E8F8EE;
+  --color-pencil: #5C6478;
+  --color-pencil-light: #9AA1B4;
+
+  --font-display: "Archivo Black", "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* ---------- Signature "pinned poster" primitives ---------- */
+
+.hard-shadow {
+  box-shadow: 5px 5px 0 var(--color-ink);
+}
+
+.hard-shadow-sm {
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+.hard-shadow-coral {
+  box-shadow: 5px 5px 0 var(--color-coral);
+}
+
+.poster-border {
+  border: 2.5px solid var(--color-ink);
+}
+
+.btn-poster {
+  font-weight: 700;
+  border: 2.5px solid var(--color-ink);
+  border-radius: 0.75rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-poster:active {
+  transform: translate(3px, 3px);
+  box-shadow: none !important;
+}
+
+.pin-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--color-coral);
+  border: 2px solid var(--color-ink);
+  top: -6px;
+  left: 20px;
+  z-index: 10;
+}
+
+.stamp-badge {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 2px solid var(--color-ink);
+  border-radius: 9999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
