@@ -9,7 +9,7 @@ client = genai.Client(
 )
 
 
-def ask_ai(question: str, hostels: list):
+def _build_prompt(question: str, hostels: list) -> str:
     hostel_text = ""
 
     for h in hostels:
@@ -25,7 +25,7 @@ Rating: {h['rating']}
 
 """
 
-    prompt = f"""
+    return f"""
 You are StaySpot AI.
 
 You help students find the best hostel.
@@ -46,9 +46,30 @@ User Question:
 {question}
 """
 
+
+def ask_ai(question: str, hostels: list):
+    prompt = _build_prompt(question, hostels)
+
     response = client.models.generate_content(
         model="gemini-flash-latest",
         contents=prompt
     )
 
     return response.text
+
+
+def ask_ai_stream(question: str, hostels: list):
+    """
+    Same as ask_ai, but yields the response text chunk by chunk as it
+    streams in from Gemini, instead of waiting for the full response.
+    """
+    prompt = _build_prompt(question, hostels)
+
+    stream = client.models.generate_content_stream(
+        model="gemini-flash-latest",
+        contents=prompt
+    )
+
+    for chunk in stream:
+        if chunk.text:
+            yield chunk.text

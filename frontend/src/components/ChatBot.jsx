@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
-import api from "../services/api";
+import { API_BASE_URL } from "../services/api";
 
 const ChatBot = () => {
   const [open, setOpen] = useState(false);
@@ -10,23 +10,59 @@ const ChatBot = () => {
   ]);
   const [loading, setLoading] = useState(false);
 
+  const updateLastMessage = (updater) => {
+    setMessages((prev) => {
+      const updated = [...prev];
+      const lastIndex = updated.length - 1;
+      updated[lastIndex] = updater(updated[lastIndex]);
+      return updated;
+    });
+  };
+
   const sendMessage = async () => {
-    if (!question.trim()) return;
+    if (!question.trim() || loading) return;
 
     const userQuestion = question;
-    setMessages((prev) => [...prev, { sender: "user", text: userQuestion }]);
     setQuestion("");
     setLoading(true);
 
+    // Add the user's message, then an empty bot bubble that fills in as
+    // chunks stream back from Gemini - this is what gives the word-by-word
+    // typing effect instead of the whole answer popping in at once.
+    setMessages((prev) => [
+      ...prev,
+      { sender: "user", text: userQuestion },
+      { sender: "bot", text: "" },
+    ]);
+
     try {
-      const response = await api.post("/chatbot/", { question: userQuestion });
-      setMessages((prev) => [...prev, { sender: "bot", text: response.data.answer }]);
+      const response = await fetch(`${API_BASE_URL}/chatbot/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: userQuestion }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("Stream failed");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunkText = decoder.decode(value, { stream: true });
+
+        updateLastMessage((msg) => ({ ...msg, text: msg.text + chunkText }));
+      }
     } catch (error) {
       console.error(error);
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "Unable to connect to the AI server. Try again shortly." },
-      ]);
+      updateLastMessage((msg) => ({
+        ...msg,
+        text: "Unable to connect to the AI server. Try again shortly.",
+      }));
     }
 
     setLoading(false);
@@ -62,7 +98,8 @@ const ChatBot = () => {
               <button
                 key={item}
                 onClick={() => setQuestion(item)}
-                className="stamp-badge text-[10px] px-3 py-1.5 bg-skytape hover:bg-marigold transition-colors"
+                disabled={loading}
+                className="stamp-badge text-[10px] px-3 py-1.5 bg-skytape hover:bg-marigold transition-colors disabled:opacity-50"
               >
                 {item}
               </button>
@@ -70,19 +107,30 @@ const ChatBot = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.map((msg, index) => (
-              <div key={index} className={msg.sender === "user" ? "text-right" : "text-left"}>
-                <span
-                  className={`inline-block px-4 py-2.5 rounded-2xl max-w-[80%] whitespace-pre-wrap text-sm font-medium border-2 border-ink ${
-                    msg.sender === "user" ? "bg-marigold text-ink" : "bg-skytape text-ink"
-                  }`}
-                >
-                  {msg.text}
-                </span>
-              </div>
-            ))}
+            {messages.map((msg, index) => {
+              const isStreamingPlaceholder =
+                loading && msg.sender === "bot" && index === messages.length - 1 && msg.text === "";
 
-            {loading && <p className="text-pencil text-sm font-medium">Thinking...</p>}
+              return (
+                <div key={index} className={msg.sender === "user" ? "text-right" : "text-left"}>
+                  <span
+                    className={`inline-block px-4 py-2.5 rounded-2xl max-w-[80%] whitespace-pre-wrap text-sm font-medium border-2 border-ink ${
+                      msg.sender === "user" ? "bg-marigold text-ink" : "bg-skytape text-ink"
+                    }`}
+                  >
+                    {isStreamingPlaceholder ? (
+                      <span className="inline-flex gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-ink animate-bounce [animation-delay:-0.3s]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-ink animate-bounce [animation-delay:-0.15s]" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-ink animate-bounce" />
+                      </span>
+                    ) : (
+                      msg.text
+                    )}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-2 p-3 border-t-2 border-ink/10">
@@ -92,11 +140,13 @@ const ChatBot = () => {
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Ask about hostels..."
-              className="flex-1 poster-border rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+              disabled={loading}
+              className="flex-1 poster-border rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-marigold disabled:opacity-60"
             />
             <button
               onClick={sendMessage}
-              className="btn-poster bg-ink text-white p-2.5 hard-shadow-sm"
+              disabled={loading}
+              className="btn-poster bg-ink text-white p-2.5 hard-shadow-sm disabled:opacity-60"
             >
               <Send size={16} />
             </button>
