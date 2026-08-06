@@ -1,14 +1,35 @@
-import { useState } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageCircle, X, Send, RotateCcw } from "lucide-react";
 import { API_BASE_URL } from "../services/api";
+
+const STORAGE_KEY = "stayspot_chat_history";
+
+const WELCOME_MESSAGE = {
+  sender: "bot",
+  text: "Welcome to StaySpot AI! Ask me anything about hostels.",
+};
+
+function loadStoredMessages() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : [WELCOME_MESSAGE];
+  } catch {
+    return [WELCOME_MESSAGE];
+  }
+}
 
 const ChatBot = () => {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState([
-    { sender: "bot", text: "Welcome to StaySpot AI! Ask me anything about hostels." },
-  ]);
+  const [messages, setMessages] = useState(loadStoredMessages);
   const [loading, setLoading] = useState(false);
+
+  // Chat history survives page reloads/navigation instead of resetting
+  // every time the widget unmounts.
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
 
   const updateLastMessage = (updater) => {
     setMessages((prev) => {
@@ -19,10 +40,19 @@ const ChatBot = () => {
     });
   };
 
+  const clearChat = () => {
+    setMessages([WELCOME_MESSAGE]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
   const sendMessage = async () => {
     if (!question.trim() || loading) return;
 
     const userQuestion = question;
+    // Send everything said so far as context, so the AI remembers earlier
+    // turns instead of treating every message as a fresh conversation.
+    const historyForRequest = messages;
+
     setQuestion("");
     setLoading(true);
 
@@ -39,7 +69,10 @@ const ChatBot = () => {
       const response = await fetch(`${API_BASE_URL}/chatbot/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: userQuestion }),
+        body: JSON.stringify({
+          question: userQuestion,
+          history: historyForRequest,
+        }),
       });
 
       if (!response.ok || !response.body) {
@@ -86,11 +119,21 @@ const ChatBot = () => {
 
       {open && (
         <div className="fixed right-6 bottom-24 w-[360px] max-w-[90vw] h-[520px] poster-border hard-shadow rounded-2xl bg-paper flex flex-col overflow-hidden z-50">
-          <div className="bg-ink text-white px-4 py-4 flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-marigold border-2 border-ink flex items-center justify-center">
-              <MessageCircle size={16} className="text-ink" />
-            </span>
-            <span className="font-display text-base">STAYSPOT AI</span>
+          <div className="bg-ink text-white px-4 py-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-8 h-8 rounded-full bg-marigold border-2 border-ink flex items-center justify-center">
+                <MessageCircle size={16} className="text-ink" />
+              </span>
+              <span className="font-display text-base">STAYSPOT AI</span>
+            </div>
+            <button
+              onClick={clearChat}
+              disabled={loading}
+              title="Start a new chat"
+              className="text-white/70 hover:text-white transition-colors disabled:opacity-40"
+            >
+              <RotateCcw size={16} />
+            </button>
           </div>
 
           <div className="p-3 flex flex-wrap gap-2 border-b-2 border-ink/10">
