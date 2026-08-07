@@ -1,6 +1,9 @@
 import axios from "axios";
 
-export const API_BASE_URL = "http://127.0.0.1:8000";
+// In production, set VITE_API_URL to your deployed backend's URL
+// (e.g. https://stayspot-api.onrender.com). Falls back to localhost
+// for local development, so nothing needs to change day-to-day.
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
