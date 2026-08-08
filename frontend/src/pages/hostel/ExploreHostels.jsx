@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, Map, List, X } from "lucide-react";
+import { Search, SlidersHorizontal, Map, List, X, ArrowLeft } from "lucide-react";
 import { searchHostels } from "../../services/hostelService";
 import HostelCard from "../../components/hostel/HostelCard";
+import HostelDetailPanel from "../../components/hostel/HostelDetailPanel";
 import HostelsMapView from "../../components/map/HostelsMapView";
 
 const ROTATIONS = ["-rotate-1", "rotate-1", "-rotate-1", "rotate-1", "rotate-2", "-rotate-2"];
@@ -37,6 +38,21 @@ function ExploreHostels() {
   const [laundry, setLaundry] = useState(false);
   const [sharingType, setSharingType] = useState("");
 
+  const selectedHostelId = searchParams.get("selected");
+
+  const selectHostel = (hostelId) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("selected", hostelId);
+    setSearchParams(next);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const backToResults = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("selected");
+    setSearchParams(next);
+  };
+
   useEffect(() => {
     runSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -55,6 +71,7 @@ function ExploreHostels() {
     if (ac) params.ac = true;
     if (laundry) params.laundry = true;
     if (sharingType) params.sharing_type = sharingType;
+    if (selectedHostelId) params.selected = selectedHostelId;
 
     setSearchParams(params);
 
@@ -216,7 +233,20 @@ function ExploreHostels() {
         </form>
 
         {/* Results */}
-        {loading ? (
+        {selectedHostelId ? (
+          <div>
+            <button
+              onClick={backToResults}
+              className="btn-poster bg-paper text-ink px-5 py-2.5 hard-shadow-sm flex items-center gap-2 mb-6"
+            >
+              <ArrowLeft size={16} />
+              Back to results
+            </button>
+            <div className="poster-border hard-shadow rounded-2xl overflow-hidden">
+              <HostelDetailPanel hostelId={selectedHostelId} />
+            </div>
+          </div>
+        ) : loading ? (
           <div className="text-center py-20">
             <p className="font-display text-xl text-pencil">SEARCHING THE BOARD...</p>
           </div>
@@ -231,7 +261,7 @@ function ExploreHostels() {
             <p className="text-pencil font-medium mb-6">
               {hostels.length} hostel{hostels.length !== 1 ? "s" : ""} found
             </p>
-            <HostelsMapView hostels={hostels} />
+            <HostelsMapView hostels={hostels} onSelect={selectHostel} />
           </>
         ) : (
           <>
@@ -255,6 +285,7 @@ function ExploreHostels() {
                   key={hostel.id}
                   hostel={hostel}
                   rotate={ROTATIONS[i % ROTATIONS.length]}
+                  onSelect={selectHostel}
                 />
               ))}
             </div>

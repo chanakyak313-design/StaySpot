@@ -3,8 +3,15 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { MapPin, Star } from "lucide-react";
 import { marigoldPin } from "./leafletIcon";
 
-function HostelsMapView({ hostels }) {
+function HostelsMapView({ hostels, onSelect }) {
   const navigate = useNavigate();
+  const handleView = (hostelId) => {
+    if (onSelect) {
+      onSelect(hostelId);
+    } else {
+      navigate(`/hostel/${hostelId}`);
+    }
+  };
   const located = hostels.filter((h) => h.latitude && h.longitude);
 
   if (located.length === 0) {
@@ -45,7 +52,7 @@ function HostelsMapView({ hostels }) {
                   <Star size={11} fill="currentColor" /> {hostel.rating || "New"}
                 </div>
                 <button
-                  onClick={() => navigate(`/hostel/${hostel.id}`)}
+                  onClick={() => handleView(hostel.id)}
                   className="text-xs font-bold text-blue-600 hover:underline"
                 >
                   View Details →

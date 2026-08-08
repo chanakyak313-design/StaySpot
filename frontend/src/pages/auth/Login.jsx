@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { LogIn } from "lucide-react";
-import { loginUser, getCurrentUser } from "../../services/authService";
+import { loginUser, getCurrentUser, notifyAuthChanged } from "../../services/authService";
 
 function Login() {
   const navigate = useNavigate();
@@ -25,6 +25,7 @@ function Login() {
       localStorage.setItem("userId", user.id);
       localStorage.setItem("role", user.role);
       localStorage.setItem("fullName", user.full_name);
+      notifyAuthChanged();
 
       toast.success(`Welcome back, ${user.full_name}!`);
 

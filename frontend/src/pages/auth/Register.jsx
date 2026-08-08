@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { UserPlus } from "lucide-react";
-import { registerUser } from "../../services/authService";
+import { registerUser, loginUser, getCurrentUser, notifyAuthChanged } from "../../services/authService";
 
 function Register() {
   const navigate = useNavigate();
@@ -25,8 +25,26 @@ function Register() {
 
     try {
       await registerUser(form);
-      toast.success("Account created! Please login.");
-      navigate("/login");
+
+      // Log them in immediately instead of making them retype their
+      // credentials on a separate page - registering should feel like
+      // one continuous step, the way it does on most apps.
+      const data = await loginUser(form.email, form.password);
+      localStorage.setItem("token", data.access_token);
+
+      const user = await getCurrentUser();
+      localStorage.setItem("userId", user.id);
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("fullName", user.full_name);
+      notifyAuthChanged();
+
+      toast.success(`Welcome to StaySpot, ${user.full_name}!`);
+
+      if (user.role === "owner") {
+        navigate("/owner/dashboard");
+      } else {
+        navigate("/student/dashboard");
+      }
     } catch (err) {
       console.error(err);
       toast.error(

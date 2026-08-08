@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { MapPin, Wifi, Utensils, Car, Star } from "lucide-react";
 
-function HostelCard({ hostel, rotate = "rotate-0" }) {
+function HostelCard({ hostel, rotate = "rotate-0", onSelect }) {
   return (
     <div className={`relative bg-paper poster-border hard-shadow-sm rounded-2xl overflow-hidden ${rotate} hover:rotate-0 hover:-translate-y-1 transition-all duration-300`}>
       <div className="pin-dot" />
@@ -63,12 +63,21 @@ function HostelCard({ hostel, rotate = "rotate-0" }) {
             </h3>
           </div>
 
-          <Link
-            to={`/hostel/${hostel.id}`}
-            className="btn-poster bg-ink text-white px-4 py-2.5 text-sm hard-shadow-sm"
-          >
-            View
-          </Link>
+          {onSelect ? (
+            <button
+              onClick={() => onSelect(hostel.id)}
+              className="btn-poster bg-ink text-white px-4 py-2.5 text-sm hard-shadow-sm"
+            >
+              View
+            </button>
+          ) : (
+            <Link
+              to={`/hostel/${hostel.id}`}
+              className="btn-poster bg-ink text-white px-4 py-2.5 text-sm hard-shadow-sm"
+            >
+              View
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { HiMenu, HiX } from "react-icons/hi";
 import { Home as HomeIcon } from "lucide-react";
 import toast from "react-hot-toast";
-import { logout } from "../../services/authService";
+import { logout, onAuthChanged } from "../../services/authService";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -12,8 +12,12 @@ function Navbar() {
 
   useEffect(() => {
     const syncAuth = () => setFullName(localStorage.getItem("fullName"));
-    window.addEventListener("storage", syncAuth);
-    return () => window.removeEventListener("storage", syncAuth);
+    window.addEventListener("storage", syncAuth); // other tabs
+    const unsubscribe = onAuthChanged(syncAuth); // this tab
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      unsubscribe();
+    };
   }, []);
 
   const handleLogout = () => {

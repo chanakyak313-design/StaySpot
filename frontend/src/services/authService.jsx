@@ -1,5 +1,19 @@
 import api from "./api";
 
+// The browser's native "storage" event only fires in OTHER tabs, never in
+// the tab that actually made the change - so components like the Navbar
+// need this instead to know "the user just logged in/out" right here.
+const AUTH_CHANGED_EVENT = "stayspot:auth-changed";
+
+export const notifyAuthChanged = () => {
+  window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+};
+
+export const onAuthChanged = (callback) => {
+  window.addEventListener(AUTH_CHANGED_EVENT, callback);
+  return () => window.removeEventListener(AUTH_CHANGED_EVENT, callback);
+};
+
 export const loginUser = async (email, password) => {
   const params = new URLSearchParams();
   params.append("username", email);
@@ -27,4 +41,5 @@ export const logout = () => {
   localStorage.removeItem("userId");
   localStorage.removeItem("role");
   localStorage.removeItem("fullName");
+  notifyAuthChanged();
 };
