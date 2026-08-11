@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { getAllHostels } from "../../services/hostelService";
 import HostelCard from "./HostelCard";
+import HostelCardSkeleton from "./HostelCardSkeleton";
 
 const ROTATIONS = ["-rotate-1", "rotate-1", "-rotate-1", "rotate-1", "rotate-2", "-rotate-2"];
 
@@ -45,8 +47,10 @@ function FeaturedHostels() {
         </div>
 
         {loading ? (
-          <div className="text-center py-16">
-            <p className="font-display text-xl text-pencil">LOADING THE BOARD...</p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+            {ROTATIONS.map((rotate, i) => (
+              <HostelCardSkeleton key={i} rotate={rotate} />
+            ))}
           </div>
         ) : hostels.length === 0 ? (
           <div className="text-center py-16 poster-border rounded-2xl bg-skytape">
@@ -56,11 +60,18 @@ function FeaturedHostels() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
             {hostels.map((hostel, i) => (
-              <HostelCard
+              <motion.div
                 key={hostel.id}
-                hostel={hostel}
-                rotate={ROTATIONS[i % ROTATIONS.length]}
-              />
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.4, delay: i * 0.07 }}
+              >
+                <HostelCard
+                  hostel={hostel}
+                  rotate={ROTATIONS[i % ROTATIONS.length]}
+                />
+              </motion.div>
             ))}
           </div>
         )}

@@ -5,6 +5,11 @@ export const getReviews = async (hostelId) => {
     return res.data;
 };
 
+export const getFeaturedReviews = async () => {
+    const res = await api.get("/reviews/featured");
+    return res.data;
+};
+
 export const addReview = async (
     userId,
     hostelId,

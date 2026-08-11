@@ -25,6 +25,7 @@ from app.api.profile import router as profile_router
 from app.api.dashboard import router as dashboard_router
 from app.api.favorite import router as favorite_router
 from app.api.admin import router as admin_router
+from app.api.stats import router as stats_router
 from app.api import ai
 from app.api.chatbot import router as chatbot_router
 
@@ -78,5 +79,6 @@ app.include_router(profile_router)
 app.include_router(dashboard_router)
 app.include_router(favorite_router)
 app.include_router(admin_router)
+app.include_router(stats_router)
 app.include_router(ai.router)
 app.include_router(chatbot_router)

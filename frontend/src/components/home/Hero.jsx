@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import CountUp from "react-countup";
 import { ArrowRight, MapPin, IndianRupee } from "lucide-react";
+import { getStats } from "../../services/statsService";
 
 function Hero() {
   const navigate = useNavigate();
   const [city, setCity] = useState("");
   const [budget, setBudget] = useState("");
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    getStats()
+      .then(setStats)
+      .catch((err) => console.error(err));
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -14,6 +24,14 @@ function Hero() {
     if (budget) params.set("budget", budget);
     navigate(`/hostels?${params.toString()}`);
   };
+
+  const statItems = stats
+    ? [
+        { value: stats.hostels, label: "Verified Hostels" },
+        { value: stats.students, label: "Students on StaySpot" },
+        { value: stats.bookings, label: "Bookings Made" },
+      ]
+    : [];
 
   return (
     <section className="bg-skytape relative overflow-hidden border-b-[3px] border-ink">
@@ -25,9 +43,15 @@ function Hero() {
         <div className="grid lg:grid-cols-2 gap-14 items-center">
 
           {/* Left Side */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <span className="stamp-badge inline-block bg-marigold text-ink px-4 py-1.5 text-xs -rotate-2">
-              Now Live in 12+ Cities
+              {stats && stats.cities > 0
+                ? `Now Live in ${stats.cities}+ ${stats.cities === 1 ? "City" : "Cities"}`
+                : "Now Live Across India"}
             </span>
 
             <h1 className="mt-6 font-display text-5xl md:text-6xl leading-[1.05] text-ink">
@@ -60,40 +84,52 @@ function Hero() {
             </p>
 
             <div className="mt-10 flex flex-wrap gap-4">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => navigate("/hostels")}
                 className="btn-poster bg-ink text-white px-7 py-4 hard-shadow-coral flex items-center gap-2"
               >
                 Explore Hostels
                 <ArrowRight size={20} />
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => navigate("/ai")}
                 className="btn-poster bg-paper text-ink px-7 py-4 hard-shadow-sm"
               >
                 Ask StaySpot AI
-              </button>
+              </motion.button>
             </div>
 
-            <div className="mt-14 flex flex-wrap gap-10">
-              <div>
-                <h2 className="font-display text-3xl text-ink">150+</h2>
-                <p className="text-pencil font-medium">Verified Hostels</p>
+            {statItems.length > 0 && (
+              <div className="mt-14 flex flex-wrap gap-10">
+                {statItems.map((stat, i) => (
+                  <motion.div
+                    key={stat.label}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+                  >
+                    <h2 className="font-display text-3xl text-ink">
+                      <CountUp end={stat.value} duration={1.5} />+
+                    </h2>
+                    <p className="text-pencil font-medium">{stat.label}</p>
+                  </motion.div>
+                ))}
               </div>
-              <div>
-                <h2 className="font-display text-3xl text-ink">5000+</h2>
-                <p className="text-pencil font-medium">Happy Students</p>
-              </div>
-              <div>
-                <h2 className="font-display text-3xl text-ink">1200+</h2>
-                <p className="text-pencil font-medium">Bookings Made</p>
-              </div>
-            </div>
-          </div>
+            )}
+          </motion.div>
 
           {/* Right Side - "pinned index card" search */}
-          <div className="relative">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="relative"
+          >
             <div className="pin-dot" />
             <form
               onSubmit={handleSearch}
@@ -129,15 +165,17 @@ function Hero() {
                   />
                 </div>
 
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   type="submit"
                   className="btn-poster w-full bg-marigold text-ink py-4 hard-shadow-sm"
                 >
                   Search Hostels
-                </button>
+                </motion.button>
               </div>
             </form>
-          </div>
+          </motion.div>
 
         </div>
       </div>

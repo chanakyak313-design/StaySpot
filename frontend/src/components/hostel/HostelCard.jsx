@@ -1,20 +1,25 @@
 import { Link } from "react-router-dom";
-import { MapPin, Wifi, Utensils, Car, Star } from "lucide-react";
+import { MapPin, Wifi, Utensils, Car, Star, BadgeCheck } from "lucide-react";
 
 function HostelCard({ hostel, rotate = "rotate-0", onSelect }) {
   return (
     <div className={`relative bg-paper poster-border hard-shadow-sm rounded-2xl overflow-hidden ${rotate} hover:rotate-0 hover:-translate-y-1 transition-all duration-300`}>
       <div className="pin-dot" />
 
-      <img
-        src={
-          hostel.images?.length > 0
-            ? hostel.images[0].image_url
-            : "https://placehold.co/600x400/EAF3FF/14213D?text=StaySpot"
-        }
-        alt={hostel.hostel_name}
-        className="w-full h-52 object-cover border-b-2 border-ink"
-      />
+      <div className="relative">
+        <img
+          src={
+            hostel.images?.length > 0
+              ? hostel.images[0].image_url
+              : "https://placehold.co/600x400/EAF3FF/14213D?text=StaySpot"
+          }
+          alt={hostel.hostel_name}
+          className="w-full h-52 object-cover border-b-2 border-ink"
+        />
+        <span className="stamp-badge absolute top-3 left-3 flex items-center gap-1 text-[10px] px-2.5 py-1.5 bg-mint -rotate-2">
+          <BadgeCheck size={12} /> Verified
+        </span>
+      </div>
 
       <div className="p-6">
         <div className="flex justify-between items-start gap-2">

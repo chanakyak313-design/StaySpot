@@ -5,6 +5,7 @@ from sqlalchemy import func
 from app.database.database import get_db
 from app.models.review import Review
 from app.models.hostel import Hostel
+from app.models.user import User
 
 router = APIRouter(
     prefix="/reviews",
@@ -61,6 +62,38 @@ def create_review(
     _recalculate_hostel_rating(db, hostel_id)
 
     return new_review
+
+
+# NOTE: this must be registered BEFORE /{hostel_id}, otherwise FastAPI
+# matches "/reviews/featured" against the /{hostel_id} route first and
+# tries (and fails) to parse "featured" as an integer - the same bug
+# class that hit /hostels/search earlier.
+@router.get("/featured")
+def get_featured_reviews(db: Session = Depends(get_db)):
+    """
+    Top-rated reviews across all hostels, for use as testimonials on the
+    homepage - real student feedback rather than made-up marketing copy.
+    """
+    rows = (
+        db.query(Review, Hostel.hostel_name, User.full_name)
+        .join(Hostel, Review.hostel_id == Hostel.id)
+        .join(User, Review.user_id == User.id)
+        .filter(Review.rating >= 4)
+        .order_by(Review.rating.desc(), Review.created_at.desc())
+        .limit(6)
+        .all()
+    )
+
+    return [
+        {
+            "id": review.id,
+            "rating": review.rating,
+            "review": review.review,
+            "hostel_name": hostel_name,
+            "user_name": user_name,
+        }
+        for review, hostel_name, user_name in rows
+    ]
 
 
 @router.get("/{hostel_id}")

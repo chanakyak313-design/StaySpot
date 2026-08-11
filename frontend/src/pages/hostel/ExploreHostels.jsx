@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, SlidersHorizontal, Map, List, X, ArrowLeft } from "lucide-react";
 import { searchHostels } from "../../services/hostelService";
 import HostelCard from "../../components/hostel/HostelCard";
+import HostelCardSkeleton from "../../components/hostel/HostelCardSkeleton";
 import HostelDetailPanel from "../../components/hostel/HostelDetailPanel";
 import HostelsMapView from "../../components/map/HostelsMapView";
 
@@ -233,64 +235,92 @@ function ExploreHostels() {
         </form>
 
         {/* Results */}
-        {selectedHostelId ? (
-          <div>
-            <button
-              onClick={backToResults}
-              className="btn-poster bg-paper text-ink px-5 py-2.5 hard-shadow-sm flex items-center gap-2 mb-6"
+        <AnimatePresence mode="wait">
+          {selectedHostelId ? (
+            <motion.div
+              key="detail"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
             >
-              <ArrowLeft size={16} />
-              Back to results
-            </button>
-            <div className="poster-border hard-shadow rounded-2xl overflow-hidden">
-              <HostelDetailPanel hostelId={selectedHostelId} />
-            </div>
-          </div>
-        ) : loading ? (
-          <div className="text-center py-20">
-            <p className="font-display text-xl text-pencil">SEARCHING THE BOARD...</p>
-          </div>
-        ) : hostels.length === 0 ? (
-          <div className="text-center py-20 poster-border rounded-2xl bg-skytape">
-            <SlidersHorizontal className="mx-auto text-pencil mb-4" size={32} />
-            <p className="font-display text-xl text-ink">NO MATCHES FOUND</p>
-            <p className="text-pencil mt-2">Try widening your search — a different city or a higher budget.</p>
-          </div>
-        ) : view === "map" ? (
-          <>
-            <p className="text-pencil font-medium mb-6">
-              {hostels.length} hostel{hostels.length !== 1 ? "s" : ""} found
-            </p>
-            <HostelsMapView hostels={hostels} onSelect={selectHostel} />
-          </>
-        ) : (
-          <>
-            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-              <p className="text-pencil font-medium">
+              <button
+                onClick={backToResults}
+                className="btn-poster bg-paper text-ink px-5 py-2.5 hard-shadow-sm flex items-center gap-2 mb-6"
+              >
+                <ArrowLeft size={16} />
+                Back to results
+              </button>
+              <div className="poster-border hard-shadow rounded-2xl overflow-hidden">
+                <HostelDetailPanel hostelId={selectedHostelId} />
+              </div>
+            </motion.div>
+          ) : loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12"
+            >
+              {["rotate-0", "rotate-0", "rotate-0", "rotate-0", "rotate-0", "rotate-0"].map((rotate, i) => (
+                <HostelCardSkeleton key={i} rotate={rotate} />
+              ))}
+            </motion.div>
+          ) : hostels.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-20 poster-border rounded-2xl bg-skytape"
+            >
+              <SlidersHorizontal className="mx-auto text-pencil mb-4" size={32} />
+              <p className="font-display text-xl text-ink">NO MATCHES FOUND</p>
+              <p className="text-pencil mt-2">Try widening your search — a different city or a higher budget.</p>
+            </motion.div>
+          ) : view === "map" ? (
+            <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <p className="text-pencil font-medium mb-6">
                 {hostels.length} hostel{hostels.length !== 1 ? "s" : ""} found
               </p>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                className="poster-border rounded-xl py-2 px-3 bg-paper font-semibold text-sm"
-              >
-                {SORT_OPTIONS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+              <HostelsMapView hostels={hostels} onSelect={selectHostel} />
+            </motion.div>
+          ) : (
+            <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <p className="text-pencil font-medium">
+                  {hostels.length} hostel{hostels.length !== 1 ? "s" : ""} found
+                </p>
+                <select
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  className="poster-border rounded-xl py-2 px-3 bg-paper font-semibold text-sm"
+                >
+                  {SORT_OPTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+                {sortedHostels.map((hostel, i) => (
+                  <motion.div
+                    key={hostel.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, delay: Math.min(i, 8) * 0.05 }}
+                  >
+                    <HostelCard
+                      hostel={hostel}
+                      rotate={ROTATIONS[i % ROTATIONS.length]}
+                      onSelect={selectHostel}
+                    />
+                  </motion.div>
                 ))}
-              </select>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-              {sortedHostels.map((hostel, i) => (
-                <HostelCard
-                  key={hostel.id}
-                  hostel={hostel}
-                  rotate={ROTATIONS[i % ROTATIONS.length]}
-                  onSelect={selectHostel}
-                />
-              ))}
-            </div>
-          </>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

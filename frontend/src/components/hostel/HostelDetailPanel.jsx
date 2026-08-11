@@ -5,7 +5,7 @@ import { getRooms } from "../../services/roomService";
 import { createBooking, downloadReceipt } from "../../services/bookingService";
 import { getReviews, addReview } from "../../services/reviewService";
 import { addFavorite } from "../../services/favoriteService";
-import { MapPin, Wifi, Utensils, Car, Phone, Mail, Star, Heart } from "lucide-react";
+import { MapPin, Wifi, Utensils, Car, Phone, Mail, Star, Heart, BadgeCheck } from "lucide-react";
 import HostelMap from "../map/HostelMap";
 
 const AMENITY_ICONS = {
@@ -119,8 +119,21 @@ function HostelDetailPanel({ hostelId }) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[40vh]">
-        <p className="font-display text-xl text-pencil">LOADING THE LISTING...</p>
+      <div className="bg-paper animate-pulse">
+        <div className="w-full h-[400px] bg-skytape border-b-[3px] border-ink" />
+        <div className="max-w-6xl mx-auto px-6 -mt-10 relative z-10">
+          <div className="bg-paper poster-border hard-shadow rounded-2xl p-8 mb-10">
+            <div className="h-8 bg-skytape rounded-full w-2/3 mb-4" />
+            <div className="h-4 bg-skytape rounded-full w-1/3" />
+          </div>
+          <div className="h-4 bg-skytape rounded-full w-full max-w-2xl mb-3" />
+          <div className="h-4 bg-skytape rounded-full w-full max-w-xl mb-10" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-40 bg-skytape rounded-2xl poster-border" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -178,6 +191,9 @@ function HostelDetailPanel({ hostelId }) {
               <div className="flex flex-wrap items-center gap-4 mt-4">
                 <span className="stamp-badge flex items-center gap-1 px-3 py-1.5 text-xs bg-marigold">
                   <Star size={13} fill="currentColor" /> {hostel.rating || "New"}
+                </span>
+                <span className="stamp-badge flex items-center gap-1 px-3 py-1.5 text-xs bg-mint">
+                  <BadgeCheck size={13} /> Verified Listing
                 </span>
                 <div className="flex items-center gap-1.5 text-pencil">
                   <MapPin size={17} />

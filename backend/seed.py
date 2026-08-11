@@ -32,8 +32,12 @@ USERS = [
     {"full_name": "StaySpot Admin", "email": "admin@stayspot.demo", "phone": "9000000003", "role": "admin"},
 ]
 
-# (seed, width, height) -> deterministic Lorem Picsum photo, stable and
-# reliable for a demo (real photo URLs risk going dead over time).
+REVIEWERS = [
+    "Priya Sharma", "Rahul Verma", "Sneha Iyer", "Arjun Nair", "Divya Menon",
+    "Karan Malhotra", "Neha Gupta", "Aditya Kumar", "Pooja Reddy", "Rohan Joshi",
+]
+
+
 def photo(seed: str) -> str:
     return f"https://picsum.photos/seed/{seed}/900/600"
 
@@ -55,6 +59,7 @@ HOSTELS = [
         "reviews": [
             (5, "Genuinely one of the best PGs I've stayed at. Food is home-style and the warden actually cares."),
             (4, "Great location, close to everything. WiFi drops occasionally but overall solid."),
+            (5, "Been here 8 months, never had a serious complaint. Highly recommend for Gachibowli commuters."),
         ],
     },
     {
@@ -68,11 +73,12 @@ HOSTELS = [
             {"room_type": "Private Room", "sharing_type": "Single", "total_beds": 1, "available_beds": 0, "price": 14000, "ac": True, "attached_bathroom": True},
             {"room_type": "Shared Room", "sharing_type": "Double", "total_beds": 2, "available_beds": 2, "price": 9000, "ac": True, "attached_bathroom": True},
         ],
-        "images": [photo("kora1"), photo("kora2")],
+        "images": [photo("kora1"), photo("kora2"), photo("kora3")],
         "reviews": [
             (5, "Feels more like a serviced apartment than a hostel. Rooftop is a huge plus."),
             (5, "Pricey but worth it if you want privacy and reliable WiFi for online classes."),
             (3, "Good place but parking is a real problem in the area."),
+            (4, "Clean, modern, and the community events on the rooftop are a nice touch."),
         ],
     },
     {
@@ -89,6 +95,7 @@ HOSTELS = [
         "images": [photo("river1"), photo("river2")],
         "reviews": [
             (4, "Does the job. Cheap, close to campus, food is basic but edible."),
+            (3, "No frills as advertised - fine if you just need a bed and don't expect luxury."),
         ],
     },
     {
@@ -106,6 +113,7 @@ HOSTELS = [
         "reviews": [
             (5, "Extremely safe, my parents were worried but this place changed their mind."),
             (4, "Food could be better but safety and cleanliness make up for it."),
+            (5, "Warden is strict about timings but honestly that's a good thing for a girls PG."),
         ],
     },
     {
@@ -122,6 +130,7 @@ HOSTELS = [
         "images": [photo("andheri1"), photo("andheri2")],
         "reviews": [
             (4, "Super convenient if you're commuting by metro every day. Rooms are small though."),
+            (4, "No food included but there are great local spots right outside."),
         ],
     },
     {
@@ -134,8 +143,114 @@ HOSTELS = [
         "rooms": [
             {"room_type": "Shared Room", "sharing_type": "Double", "total_beds": 2, "available_beds": 2, "price": 6000, "ac": False, "attached_bathroom": True},
         ],
-        "images": [photo("green1")],
-        "reviews": [],
+        "images": [photo("green1"), photo("green2")],
+        "reviews": [
+            (4, "Quiet and peaceful, good if you want to focus on studies away from city noise."),
+        ],
+    },
+    {
+        "hostel_name": "Saket Scholars Hostel",
+        "description": "Long-established hostel near Saket, popular with civil services aspirants. Reading room and mess included.",
+        "city": "Delhi", "area": "Saket", "address": "MB Road, Saket",
+        "latitude": 28.5245, "longitude": 77.2066,
+        "contact_number": "9812340007", "email": "saket.scholars@stayspot.demo",
+        "food": True, "wifi": True, "parking": False, "laundry": True, "cctv": True, "power_backup": True,
+        "rooms": [
+            {"room_type": "Shared Room", "sharing_type": "Double", "total_beds": 2, "available_beds": 1, "price": 8000, "ac": True, "attached_bathroom": True},
+            {"room_type": "Shared Room", "sharing_type": "Triple", "total_beds": 3, "available_beds": 2, "price": 6200, "ac": False, "attached_bathroom": False},
+            {"room_type": "Dormitory", "sharing_type": "Four", "total_beds": 4, "available_beds": 0, "price": 4800, "ac": False, "attached_bathroom": False},
+        ],
+        "images": [photo("saket1"), photo("saket2"), photo("saket3")],
+        "reviews": [
+            (5, "The reading room alone is worth it. Very quiet, disciplined environment for serious prep."),
+            (5, "Been here two years for UPSC prep. Mess food is consistent and the staff respect study schedules."),
+            (4, "Great for focus, though it can feel a bit strict on visitor rules."),
+        ],
+    },
+    {
+        "hostel_name": "Salt Lake Residency",
+        "description": "Comfortable hostel in Salt Lake, close to tech parks and well connected by metro.",
+        "city": "Kolkata", "area": "Salt Lake", "address": "Sector V, Salt Lake City",
+        "latitude": 22.5744, "longitude": 88.4338,
+        "contact_number": "9812340008", "email": "saltlake.residency@stayspot.demo",
+        "food": True, "wifi": True, "parking": True, "laundry": True, "cctv": True, "power_backup": True,
+        "rooms": [
+            {"room_type": "Private Room", "sharing_type": "Single", "total_beds": 1, "available_beds": 1, "price": 8500, "ac": True, "attached_bathroom": True},
+            {"room_type": "Shared Room", "sharing_type": "Double", "total_beds": 2, "available_beds": 1, "price": 5800, "ac": False, "attached_bathroom": True},
+        ],
+        "images": [photo("salt1"), photo("salt2")],
+        "reviews": [
+            (5, "Well maintained and the metro connectivity makes commuting to Sector V effortless."),
+            (4, "Solid choice for IT park employees and students alike."),
+        ],
+    },
+    {
+        "hostel_name": "HITEC City Executive PG",
+        "description": "Premium PG catering to working professionals and postgrad students near HITEC City.",
+        "city": "Hyderabad", "area": "HITEC City", "address": "Cyber Towers Rd, HITEC City",
+        "latitude": 17.4483, "longitude": 78.3915,
+        "contact_number": "9812340009", "email": "hitec.executive@stayspot.demo",
+        "food": True, "wifi": True, "parking": True, "laundry": True, "cctv": True, "power_backup": True,
+        "rooms": [
+            {"room_type": "Private Room", "sharing_type": "Single", "total_beds": 1, "available_beds": 2, "price": 13500, "ac": True, "attached_bathroom": True},
+        ],
+        "images": [photo("hitec1"), photo("hitec2"), photo("hitec3")],
+        "reviews": [
+            (5, "Top-tier for the price. Feels like a mini studio apartment, not a typical PG."),
+            (5, "Housekeeping daily, fast WiFi, and genuinely quiet at night. Worth the premium."),
+            (4, "Excellent facilities, only downside is it's a bit far from the metro."),
+        ],
+    },
+    {
+        "hostel_name": "Whitefield Tech Hostel",
+        "description": "Modern hostel built for the Whitefield IT crowd - coworking-style common areas and blazing fast WiFi.",
+        "city": "Bangalore", "area": "Whitefield", "address": "ITPL Main Road, Whitefield",
+        "latitude": 12.9698, "longitude": 77.7500,
+        "contact_number": "9812340010", "email": "whitefield.tech@stayspot.demo",
+        "food": True, "wifi": True, "parking": True, "laundry": True, "cctv": True, "power_backup": True,
+        "rooms": [
+            {"room_type": "Private Room", "sharing_type": "Single", "total_beds": 1, "available_beds": 1, "price": 12500, "ac": True, "attached_bathroom": True},
+            {"room_type": "Shared Room", "sharing_type": "Double", "total_beds": 2, "available_beds": 2, "price": 8200, "ac": True, "attached_bathroom": True},
+        ],
+        "images": [photo("white1"), photo("white2")],
+        "reviews": [
+            (4, "Common area doubles as a great workspace, WiFi genuinely never drops."),
+            (5, "Best hostel I've lived in near Whitefield, hands down."),
+        ],
+    },
+    {
+        "hostel_name": "FC Road Girls Hostel",
+        "description": "Well-known girls hostel on FC Road, walking distance from multiple Pune colleges.",
+        "city": "Pune", "area": "FC Road", "address": "Fergusson College Road",
+        "latitude": 18.5236, "longitude": 73.8410,
+        "contact_number": "9812340011", "email": "fcroad.girls@stayspot.demo",
+        "food": True, "wifi": True, "parking": False, "laundry": True, "cctv": True, "power_backup": False,
+        "rooms": [
+            {"room_type": "Shared Room", "sharing_type": "Triple", "total_beds": 3, "available_beds": 1, "price": 5500, "ac": False, "attached_bathroom": True},
+            {"room_type": "Dormitory", "sharing_type": "Six", "total_beds": 6, "available_beds": 3, "price": 4000, "ac": False, "attached_bathroom": False},
+        ],
+        "images": [photo("fc1"), photo("fc2")],
+        "reviews": [
+            (5, "Can't beat the location - roll out of bed and you're basically on campus."),
+            (4, "A bit noisy given how central it is, but that's the tradeoff for the location."),
+            (5, "Warden aunty is like a second mother here, genuinely caring staff."),
+        ],
+    },
+    {
+        "hostel_name": "T Nagar Comfort Stay",
+        "description": "Centrally located hostel in T Nagar with easy access to shopping, food, and public transport.",
+        "city": "Chennai", "area": "T Nagar", "address": "Usman Road, T Nagar",
+        "latitude": 13.0418, "longitude": 80.2341,
+        "contact_number": "9812340012", "email": "tnagar.comfort@stayspot.demo",
+        "food": True, "wifi": True, "parking": False, "laundry": True, "cctv": True, "power_backup": True,
+        "rooms": [
+            {"room_type": "Shared Room", "sharing_type": "Double", "total_beds": 2, "available_beds": 2, "price": 6800, "ac": True, "attached_bathroom": True},
+            {"room_type": "Shared Room", "sharing_type": "Triple", "total_beds": 3, "available_beds": 1, "price": 5200, "ac": False, "attached_bathroom": False},
+        ],
+        "images": [photo("tnagar1"), photo("tnagar2")],
+        "reviews": [
+            (4, "Great if you want to be in the middle of everything - shopping, food, transit."),
+        ],
     },
 ]
 
@@ -168,9 +283,23 @@ def run():
         owner = users_by_role["owner"]
         student = users_by_role["student"]
 
-        print("Seeding hostels, rooms, photos, and reviews...")
+        print("Seeding reviewer accounts (for varied, realistic testimonials)...")
+        reviewer_users = []
+        for i, name in enumerate(REVIEWERS):
+            reviewer = User(
+                full_name=name,
+                email=f"reviewer{i}@stayspot.demo",
+                phone=f"90000010{i:02d}",
+                password=hash_password(DEMO_PASSWORD),
+                role="student",
+            )
+            db.add(reviewer)
+            db.flush()
+            reviewer_users.append(reviewer)
+
+        print(f"Seeding {len(HOSTELS)} hostels, rooms, photos, and reviews...")
         all_rooms = []
-        for h in HOSTELS:
+        for hostel_index, h in enumerate(HOSTELS):
             hostel = Hostel(
                 owner_id=owner.id,
                 hostel_name=h["hostel_name"],
@@ -202,9 +331,10 @@ def run():
                 db.add(HostelImage(hostel_id=hostel.id, image_url=url))
 
             ratings = []
-            for rating, comment in h["reviews"]:
+            for i, (rating, comment) in enumerate(h["reviews"]):
+                reviewer = reviewer_users[(i + hostel_index * 3) % len(reviewer_users)]
                 db.add(Review(
-                    user_id=student.id,
+                    user_id=reviewer.id,
                     hostel_id=hostel.id,
                     rating=rating,
                     review=comment,
@@ -224,11 +354,14 @@ def run():
                 booking_date=datetime.now(timezone.utc) - timedelta(days=3),
             ))
 
-        seeded_hostels = db.query(Hostel).limit(3).all()
+        seeded_hostels = db.query(Hostel).limit(4).all()
         for hostel in seeded_hostels:
             db.add(Favorite(user_id=student.id, hostel_id=hostel.id))
 
         db.commit()
+
+        total_reviews = sum(len(h["reviews"]) for h in HOSTELS)
+        cities = sorted(set(h["city"] for h in HOSTELS))
 
         print()
         print("=" * 60)
@@ -240,7 +373,8 @@ def run():
         print(f"  Owner   : owner@stayspot.demo   / {DEMO_PASSWORD}")
         print(f"  Admin   : admin@stayspot.demo   / {DEMO_PASSWORD}")
         print()
-        print(f"Seeded {len(HOSTELS)} hostels across {len(set(h['city'] for h in HOSTELS))} cities.")
+        print(f"Seeded {len(HOSTELS)} hostels, {total_reviews} reviews, across {len(cities)} cities:")
+        print(f"  {', '.join(cities)}")
 
     except Exception:
         db.rollback()
