@@ -60,20 +60,22 @@ function ExploreHostels() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const runSearch = async (e) => {
+  const runSearch = async (e, customParams = null) => {
     if (e) e.preventDefault();
     setLoading(true);
 
-    const params = {};
-    if (city) params.city = city;
-    if (maxPrice) params.max_price = maxPrice;
-    if (wifi) params.wifi = true;
-    if (food) params.food = true;
-    if (parking) params.parking = true;
-    if (ac) params.ac = true;
-    if (laundry) params.laundry = true;
-    if (sharingType) params.sharing_type = sharingType;
-    if (selectedHostelId) params.selected = selectedHostelId;
+    const params = customParams !== null ? customParams : {};
+    if (customParams === null) {
+      if (city) params.city = city;
+      if (maxPrice) params.max_price = maxPrice;
+      if (wifi) params.wifi = true;
+      if (food) params.food = true;
+      if (parking) params.parking = true;
+      if (ac) params.ac = true;
+      if (laundry) params.laundry = true;
+      if (sharingType) params.sharing_type = sharingType;
+      if (selectedHostelId) params.selected = selectedHostelId;
+    }
 
     setSearchParams(params);
 
@@ -96,8 +98,7 @@ function ExploreHostels() {
     setAc(false);
     setLaundry(false);
     setSharingType("");
-    setSearchParams({});
-    runSearch();
+    runSearch(null, {});
   };
 
   const toggleFilter = (setter) => setter((prev) => !prev);

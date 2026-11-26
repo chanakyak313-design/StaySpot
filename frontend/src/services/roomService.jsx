@@ -10,6 +10,11 @@ export const getRooms = async (hostelId) => {
     return res.data;
 };
 
+export const getRoomById = async (roomId) => {
+    const res = await api.get(`/rooms/${roomId}`);
+    return res.data;
+};
+
 export const deleteRoom = async (id) => {
     await api.delete(`/rooms/${id}`);
 };

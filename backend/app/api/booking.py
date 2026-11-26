@@ -7,6 +7,7 @@ from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.models.room import Room
 from app.models.hostel import Hostel
+from app.models.hostel_image import HostelImage
 from app.models.booking import Booking
 
 from app.schemas.booking import BookingCreate, BookingResponse
@@ -19,13 +20,37 @@ router = APIRouter(
 )
 
 
+def _enrich_booking(booking: Booking, db: Session) -> BookingResponse:
+    room = db.query(Room).filter(Room.id == booking.room_id).first()
+    hostel = db.query(Hostel).filter(Hostel.id == room.hostel_id).first() if room else None
+    first_image = (
+        db.query(HostelImage).filter(HostelImage.hostel_id == hostel.id).first()
+        if hostel else None
+    )
+
+    return BookingResponse(
+        id=booking.id,
+        user_id=booking.user_id,
+        room_id=booking.room_id,
+        status=booking.status,
+        booking_date=booking.booking_date,
+        hostel_id=hostel.id if hostel else None,
+        hostel_name=hostel.hostel_name if hostel else "StaySpot Hostel",
+        city=hostel.city if hostel else "",
+        area=hostel.area if hostel else "",
+        room_type=room.room_type if room else "Room",
+        sharing_type=room.sharing_type if room else "",
+        price=room.price if room else 0.0,
+        image_url=first_image.image_url if first_image else None,
+    )
+
+
 @router.post("/", response_model=BookingResponse)
 def create_booking(
     booking: BookingCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     room = db.query(Room).filter(Room.id == booking.room_id).first()
 
     if room is None:
@@ -37,7 +62,7 @@ def create_booking(
     if room.available_beds <= 0:
         raise HTTPException(
             status_code=400,
-            detail="Room is full"
+            detail="Room is currently full"
         )
 
     new_booking = Booking(
@@ -52,8 +77,6 @@ def create_booking(
     db.commit()
     db.refresh(new_booking)
 
-    # Best-effort confirmation email - never blocks the booking response
-    # if it fails (e.g. SMTP not configured yet).
     hostel = db.query(Hostel).filter(Hostel.id == room.hostel_id).first()
     if hostel:
         try:
@@ -66,7 +89,7 @@ def create_booking(
         except Exception:
             pass
 
-    return new_booking
+    return _enrich_booking(new_booking, db)
 
 
 # ---------------- My Bookings ----------------
@@ -76,12 +99,14 @@ def get_my_bookings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    bookings = (
+        db.query(Booking)
+        .filter(Booking.user_id == current_user.id)
+        .order_by(Booking.booking_date.desc())
+        .all()
+    )
 
-    bookings = db.query(Booking).filter(
-        Booking.user_id == current_user.id
-    ).all()
-
-    return bookings
+    return [_enrich_booking(b, db) for b in bookings]
 
 
 # ---------------- Cancel Booking ----------------
@@ -92,7 +117,6 @@ def cancel_booking(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     booking = db.query(Booking).filter(
         Booking.id == booking_id
     ).first()
@@ -103,7 +127,7 @@ def cancel_booking(
             detail="Booking not found"
         )
 
-    if booking.user_id != current_user.id:
+    if booking.user_id != current_user.id and current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=403,
             detail="You can cancel only your own booking."
@@ -116,7 +140,7 @@ def cancel_booking(
     if room:
         room.available_beds += 1
 
-    db.delete(booking)
+    booking.status = "Cancelled"
     db.commit()
 
     return {
@@ -124,13 +148,15 @@ def cancel_booking(
     }
 
 
-@router.get("/user/{user_id}")
+@router.get("/user/{user_id}", response_model=list[BookingResponse])
 def get_user_bookings(user_id: int, db: Session = Depends(get_db)):
-    return (
+    bookings = (
         db.query(Booking)
         .filter(Booking.user_id == user_id)
+        .order_by(Booking.booking_date.desc())
         .all()
     )
+    return [_enrich_booking(b, db) for b in bookings]
 
 
 # ---------------- Receipt ----------------
@@ -145,7 +171,7 @@ def download_booking_receipt(
     if booking is None:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    if booking.user_id != current_user.id:
+    if booking.user_id != current_user.id and current_user.role.lower() != "admin":
         raise HTTPException(status_code=403, detail="You can only download your own receipts")
 
     room = db.query(Room).filter(Room.id == booking.room_id).first()

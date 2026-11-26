@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -13,12 +16,14 @@ router = APIRouter(
 )
 
 
+class ReviewInput(BaseModel):
+    user_id: Optional[int] = None
+    hostel_id: Optional[int] = None
+    rating: int
+    comment: str
+
+
 def _recalculate_hostel_rating(db: Session, hostel_id: int):
-    """
-    Hostel.rating is a stored average, not computed on the fly, so it has
-    to be refreshed any time a review is added or removed - otherwise it
-    just sits frozen at whatever it started as.
-    """
     hostel = db.query(Hostel).filter(Hostel.id == hostel_id).first()
     if hostel is None:
         return
@@ -35,44 +40,58 @@ def _recalculate_hostel_rating(db: Session, hostel_id: int):
 
 @router.post("/")
 def create_review(
-    user_id: int,
-    hostel_id: int,
-    rating: int,
-    comment: str,
+    user_id: Optional[int] = None,
+    hostel_id: Optional[int] = None,
+    rating: Optional[int] = None,
+    comment: Optional[str] = None,
+    body: Optional[ReviewInput] = Body(None),
     db: Session = Depends(get_db)
 ):
-    if not (1 <= rating <= 5):
+    final_user_id = user_id or (body.user_id if body else None)
+    final_hostel_id = hostel_id or (body.hostel_id if body else None)
+    final_rating = rating if rating is not None else (body.rating if body else None)
+    final_comment = comment or (body.comment if body else None)
+
+    if not final_user_id or not final_hostel_id or final_rating is None or not final_comment:
+        raise HTTPException(status_code=400, detail="Missing required review fields (user_id, hostel_id, rating, comment)")
+
+    if not (1 <= final_rating <= 5):
         raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
 
-    hostel = db.query(Hostel).filter(Hostel.id == hostel_id).first()
+    hostel = db.query(Hostel).filter(Hostel.id == final_hostel_id).first()
     if hostel is None:
         raise HTTPException(status_code=404, detail="Hostel not found")
 
     new_review = Review(
-        user_id=user_id,
-        hostel_id=hostel_id,
-        rating=rating,
-        review=comment
+        user_id=final_user_id,
+        hostel_id=final_hostel_id,
+        rating=final_rating,
+        review=final_comment
     )
 
     db.add(new_review)
     db.commit()
     db.refresh(new_review)
 
-    _recalculate_hostel_rating(db, hostel_id)
+    _recalculate_hostel_rating(db, final_hostel_id)
 
-    return new_review
+    user = db.query(User).filter(User.id == final_user_id).first()
+
+    return {
+        "id": new_review.id,
+        "user_id": new_review.user_id,
+        "hostel_id": new_review.hostel_id,
+        "rating": new_review.rating,
+        "review": new_review.review,
+        "created_at": new_review.created_at.isoformat() if new_review.created_at else datetime.now(timezone.utc).isoformat(),
+        "user_name": user.full_name if user else f"Student #{new_review.user_id}",
+    }
 
 
-# NOTE: this must be registered BEFORE /{hostel_id}, otherwise FastAPI
-# matches "/reviews/featured" against the /{hostel_id} route first and
-# tries (and fails) to parse "featured" as an integer - the same bug
-# class that hit /hostels/search earlier.
 @router.get("/featured")
 def get_featured_reviews(db: Session = Depends(get_db)):
     """
-    Top-rated reviews across all hostels, for use as testimonials on the
-    homepage - real student feedback rather than made-up marketing copy.
+    Top-rated reviews across all hostels for testimonials on the homepage.
     """
     rows = (
         db.query(Review, Hostel.hostel_name, User.full_name)
@@ -101,12 +120,26 @@ def get_reviews(
     hostel_id: int,
     db: Session = Depends(get_db)
 ):
-
-    return (
-        db.query(Review)
+    rows = (
+        db.query(Review, User.full_name)
+        .outerjoin(User, Review.user_id == User.id)
         .filter(Review.hostel_id == hostel_id)
+        .order_by(Review.created_at.desc())
         .all()
     )
+
+    return [
+        {
+            "id": r.id,
+            "user_id": r.user_id,
+            "hostel_id": r.hostel_id,
+            "rating": r.rating,
+            "review": r.review,
+            "created_at": r.created_at.isoformat() if r.created_at else datetime.now(timezone.utc).isoformat(),
+            "user_name": full_name or f"Verified Student #{r.user_id}",
+        }
+        for r, full_name in rows
+    ]
 
 
 @router.delete("/{review_id}")
@@ -114,7 +147,6 @@ def delete_review(
     review_id: int,
     db: Session = Depends(get_db)
 ):
-
     review = (
         db.query(Review)
         .filter(Review.id == review_id)

@@ -1,32 +1,47 @@
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { getHostelById } from "../../services/hostelService";
 import { getRooms } from "../../services/roomService";
-import { createBooking, downloadReceipt } from "../../services/bookingService";
 import { getReviews, addReview } from "../../services/reviewService";
 import { addFavorite } from "../../services/favoriteService";
-import { MapPin, Wifi, Utensils, Car, Phone, Mail, Star, Heart, BadgeCheck } from "lucide-react";
+import {
+  MapPin,
+  Wifi,
+  Utensils,
+  Car,
+  Phone,
+  Mail,
+  Star,
+  Heart,
+  BadgeCheck,
+  Shield,
+  Zap,
+  Shirt,
+  Video,
+  ArrowRight
+} from "lucide-react";
 import HostelMap from "../map/HostelMap";
 
 const AMENITY_ICONS = {
-  wifi: { icon: Wifi, label: "Wi-Fi", bg: "bg-skytape" },
-  food: { icon: Utensils, label: "Food", bg: "bg-mint" },
-  parking: { icon: Car, label: "Parking", bg: "bg-skytape" },
+  wifi: { icon: Wifi, label: "High-Speed Wi-Fi", bg: "bg-skytape" },
+  food: { icon: Utensils, label: "Homely Mess Meals", bg: "bg-mint" },
+  parking: { icon: Car, label: "Vehicle Parking", bg: "bg-skytape" },
+  laundry: { icon: Shirt, label: "Washing & Laundry", bg: "bg-mint" },
+  cctv: { icon: Video, label: "24/7 CCTV Security", bg: "bg-skytape" },
+  power_backup: { icon: Zap, label: "Full Power Backup", bg: "bg-marigold" },
 };
 
-/**
- * Renders a hostel's full details, rooms, booking, reviews, and map.
- * Used both as the standalone /hostel/:id page (for direct/shareable
- * links) and inline within the Explore page, so booking and every other
- * action can happen right where a hostel was selected - no separate
- * page-to-page navigation required.
- */
 function HostelDetailPanel({ hostelId }) {
+  const navigate = useNavigate();
   const [hostel, setHostel] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
+  const [favorited, setFavorited] = useState(false);
+
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     loadHostel();
@@ -42,6 +57,7 @@ function HostelDetailPanel({ hostelId }) {
       setHostel(data);
     } catch (err) {
       console.error(err);
+      toast.error("Couldn't load hostel details.");
     } finally {
       setLoading(false);
     }
@@ -63,26 +79,23 @@ function HostelDetailPanel({ hostelId }) {
     }
   };
 
-  const handleBooking = async (roomId) => {
+  const handleFavoriteToggle = async () => {
+    if (!userId) {
+      toast.error("Please login to save this hostel to favorites.");
+      return;
+    }
     try {
-      const bookingResponse = await createBooking({ room_id: roomId });
-
-      toast.success("Booking confirmed!");
-
-      if (window.confirm("Download your receipt now?")) {
-        await downloadReceipt(bookingResponse.id);
-      }
-
-      loadRooms();
+      await addFavorite(userId, hostelId);
+      setFavorited(true);
+      toast.success("Added to your favorites! ❤️");
     } catch (err) {
       console.error(err);
-      toast.error("Booking failed: " + (err.response?.data?.detail || "Please try again"));
+      toast.error("Couldn't update favorites.");
     }
   };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    const userId = localStorage.getItem("userId");
 
     if (!userId) {
       toast.error("Please login to submit a review.");
@@ -91,7 +104,7 @@ function HostelDetailPanel({ hostelId }) {
 
     try {
       await addReview(userId, hostelId, reviewForm.rating, reviewForm.comment);
-      toast.success("Review submitted!");
+      toast.success("Thank you for your review! ⭐");
       setReviewForm({ rating: 5, comment: "" });
       loadReviews();
       loadHostel();
@@ -101,325 +114,357 @@ function HostelDetailPanel({ hostelId }) {
     }
   };
 
-  const handleFavorite = async () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      toast.error("Please login to save favorites.");
-      return;
-    }
-
-    try {
-      await addFavorite(userId, hostel.id);
-      toast.success("Added to Favorites!");
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.detail || "Couldn't add to favorites");
-    }
-  };
-
   if (loading) {
     return (
-      <div className="bg-paper animate-pulse">
-        <div className="w-full h-[400px] bg-skytape border-b-[3px] border-ink" />
-        <div className="max-w-6xl mx-auto px-6 -mt-10 relative z-10">
-          <div className="bg-paper poster-border hard-shadow rounded-2xl p-8 mb-10">
-            <div className="h-8 bg-skytape rounded-full w-2/3 mb-4" />
-            <div className="h-4 bg-skytape rounded-full w-1/3" />
-          </div>
-          <div className="h-4 bg-skytape rounded-full w-full max-w-2xl mb-3" />
-          <div className="h-4 bg-skytape rounded-full w-full max-w-xl mb-10" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-40 bg-skytape rounded-2xl poster-border" />
-            ))}
-          </div>
-        </div>
+      <div className="bg-paper min-h-[60vh] flex items-center justify-center">
+        <p className="font-display text-xl text-pencil animate-pulse">LOADING HOSTEL DETAILS...</p>
       </div>
     );
   }
 
   if (!hostel) {
     return (
-      <div className="flex justify-center items-center min-h-[40vh]">
-        <div className="text-center poster-border rounded-2xl bg-skytape p-10">
-          <p className="font-display text-xl text-coral">HOSTEL NOT FOUND</p>
+      <div className="bg-paper min-h-[60vh] flex items-center justify-center p-6">
+        <div className="poster-border rounded-2xl p-8 bg-skytape text-center max-w-md">
+          <p className="font-display text-xl text-ink">HOSTEL NOT FOUND</p>
+          <Link to="/hostels" className="btn-poster inline-block mt-4 bg-marigold text-ink px-5 py-2.5">
+            Back to Explore
+          </Link>
         </div>
       </div>
     );
   }
 
+  const primaryImage =
+    hostel.images && hostel.images.length > 0
+      ? hostel.images[0].image_url
+      : "https://picsum.photos/seed/hostel/900/600";
+
   return (
-    <div className="bg-paper">
-      {/* Hero image */}
-      <div className="border-b-[3px] border-ink">
-        {hostel.images && hostel.images.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 max-h-[480px] overflow-hidden">
-            <img
-              src={hostel.images[0].image_url}
-              alt={hostel.hostel_name}
-              className="w-full h-[480px] object-cover"
-            />
-            <div className="hidden md:grid grid-cols-2 gap-1">
-              {hostel.images.slice(1, 5).map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img.image_url}
-                  alt={`${hostel.hostel_name} ${idx}`}
-                  className="w-full h-[238px] object-cover"
-                />
-              ))}
+    <div className="bg-paper min-h-screen pb-20">
+      {/* Hero Banner with Title & Actions */}
+      <div className="bg-ink border-b-[3px] border-ink py-12">
+        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-between items-start gap-6">
+          <div className="max-w-3xl">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="stamp-badge bg-mint text-ink px-3 py-1 text-xs flex items-center gap-1 font-bold">
+                <BadgeCheck size={14} /> Verified Student Property
+              </span>
+              <span className="stamp-badge bg-marigold text-ink px-3 py-1 text-xs flex items-center gap-1 font-bold">
+                <Star size={13} fill="currentColor" /> {hostel.rating || "4.8"} / 5
+              </span>
             </div>
+            <h1 className="font-display text-3xl md:text-5xl text-white mt-4 tracking-tight">
+              {hostel.hostel_name.toUpperCase()}
+            </h1>
+            <p className="text-white/80 flex items-center gap-2 mt-2 text-sm md:text-base">
+              <MapPin size={16} className="text-coral shrink-0" />
+              {hostel.address}, {hostel.area}, {hostel.city}
+            </p>
           </div>
-        ) : (
-          <img
-            src="https://placehold.co/1200x480/EAF3FF/14213D?text=StaySpot"
-            alt={hostel.hostel_name}
-            className="w-full h-[400px] object-cover"
-          />
-        )}
+
+          {/* Quick Favorite Action */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleFavoriteToggle}
+              className={`btn-poster px-4 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                favorited ? "bg-coral text-white" : "bg-paper text-ink hover:text-coral"
+              }`}
+            >
+              <Heart size={15} fill={favorited ? "currentColor" : "none"} strokeWidth={2.5} />
+              {favorited ? "Saved in Favorites" : "Save Favorite"}
+            </button>
+            <a
+              href="#rooms"
+              className="btn-poster bg-marigold text-ink px-5 py-2.5 text-xs font-bold hard-shadow-sm flex items-center gap-1.5"
+            >
+              Book a Room <ArrowRight size={14} />
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 -mt-10 relative z-10">
+      <div className="max-w-7xl mx-auto px-6 py-10 space-y-12">
+        {/* Gallery Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 h-[340px] md:h-[420px] rounded-2xl overflow-hidden poster-border hard-shadow-sm relative">
+            <img src={primaryImage} alt={hostel.hostel_name} className="w-full h-full object-cover" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-1 gap-4 h-[340px] md:h-[420px]">
+            {hostel.images && hostel.images.length > 1 ? (
+              hostel.images.slice(1, 3).map((img, idx) => (
+                <div key={idx} className="h-full rounded-2xl overflow-hidden poster-border relative">
+                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="h-full rounded-2xl overflow-hidden poster-border relative">
+                  <img src="https://picsum.photos/seed/room1/600/400" alt="" className="w-full h-full object-cover" />
+                </div>
+                <div className="h-full rounded-2xl overflow-hidden poster-border relative">
+                  <img src="https://picsum.photos/seed/room2/600/400" alt="" className="w-full h-full object-cover" />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
 
-        {/* Header card */}
-        <div className="bg-paper poster-border hard-shadow rounded-2xl p-8 mb-10">
-          <div className="flex flex-wrap justify-between items-start gap-4">
-            <div className="flex-1 min-w-[240px]">
-              <h1 className="font-display text-3xl md:text-4xl text-ink leading-tight">
-                {hostel.hostel_name.toUpperCase()}
-              </h1>
-              <div className="flex flex-wrap items-center gap-4 mt-4">
-                <span className="stamp-badge flex items-center gap-1 px-3 py-1.5 text-xs bg-marigold">
-                  <Star size={13} fill="currentColor" /> {hostel.rating || "New"}
-                </span>
-                <span className="stamp-badge flex items-center gap-1 px-3 py-1.5 text-xs bg-mint">
-                  <BadgeCheck size={13} /> Verified Listing
-                </span>
-                <div className="flex items-center gap-1.5 text-pencil">
-                  <MapPin size={17} />
-                  <span className="font-medium">{hostel.area}, {hostel.city}</span>
+        {/* Overview & Quick Info */}
+        <div className="grid md:grid-cols-12 gap-8 items-start">
+          <div className="md:col-span-8 space-y-8">
+            {/* Description */}
+            <div className="bg-paper poster-border hard-shadow-sm rounded-2xl p-8">
+              <span className="stamp-badge bg-skytape text-ink px-3 py-1 text-xs mb-3 inline-block font-bold">
+                About The Hostel
+              </span>
+              <h2 className="font-display text-2xl text-ink mb-4">
+                PROPERTY OVERVIEW
+              </h2>
+              <p className="text-pencil font-medium leading-relaxed whitespace-pre-line text-base">
+                {hostel.description || "A clean, secure, and student-friendly PG accommodation with all essential amenities included."}
+              </p>
+
+              {/* Amenities Grid */}
+              <div className="mt-8 pt-6 border-t-2 border-dashed border-ink/15">
+                <h3 className="font-display text-sm text-ink uppercase mb-4 tracking-wider">
+                  Verified Amenities Included
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {Object.entries(AMENITY_ICONS).map(([key, config]) => {
+                    const available = hostel[key];
+                    const Icon = config.icon;
+                    return (
+                      <div
+                        key={key}
+                        className={`poster-border rounded-xl p-3 flex items-center gap-2.5 ${
+                          available ? `${config.bg} text-ink font-semibold` : "bg-paper/50 text-pencil/50 opacity-60"
+                        }`}
+                      >
+                        <Icon size={16} />
+                        <span className="text-xs">{config.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleFavorite}
-              className="btn-poster bg-coral text-white px-6 py-3 hard-shadow-sm flex items-center gap-2"
-            >
-              <Heart size={18} />
-              Save
-            </button>
-          </div>
-        </div>
 
-        {/* Description */}
-        <div className="mb-10">
-          <span className="stamp-badge inline-block bg-skytape px-3 py-1 text-xs -rotate-1 mb-4">
-            About This Place
-          </span>
-          <p className="text-pencil leading-relaxed text-lg max-w-3xl">
-            {hostel.description}
-          </p>
-        </div>
-
-        {/* Amenities */}
-        <div className="mb-10">
-          <span className="stamp-badge inline-block bg-mint px-3 py-1 text-xs rotate-1 mb-5">
-            Amenities
-          </span>
-          <div className="flex flex-wrap gap-3">
-            {["wifi", "food", "parking"].filter((k) => hostel[k]).map((k) => {
-              const { icon: Icon, label, bg } = AMENITY_ICONS[k];
-              return (
-                <div key={k} className={`flex items-center gap-2 px-4 py-3 poster-border rounded-xl ${bg}`}>
-                  <Icon className="text-ink" size={20} />
-                  <span className="font-semibold text-ink">{label}</span>
+            {/* Room Availability Section */}
+            <div id="rooms" className="scroll-mt-24 space-y-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <span className="stamp-badge bg-marigold text-ink px-3 py-1 text-xs font-bold inline-block">
+                    Live Vacancy
+                  </span>
+                  <h2 className="font-display text-2xl text-ink mt-2">
+                    AVAILABLE ROOMS & RATES
+                  </h2>
                 </div>
-              );
-            })}
-            {hostel.laundry && (
-              <div className="flex items-center gap-2 px-4 py-3 poster-border rounded-xl bg-skytape">
-                <span>🧺</span><span className="font-semibold text-ink">Laundry</span>
+                <p className="text-xs text-pencil font-medium">
+                  {rooms.length} Room Option{rooms.length === 1 ? "" : "s"} Available
+                </p>
               </div>
-            )}
-            {hostel.cctv && (
-              <div className="flex items-center gap-2 px-4 py-3 poster-border rounded-xl bg-mint">
-                <span>📹</span><span className="font-semibold text-ink">CCTV</span>
-              </div>
-            )}
-            {hostel.power_backup && (
-              <div className="flex items-center gap-2 px-4 py-3 poster-border rounded-xl bg-skytape">
-                <span>⚡</span><span className="font-semibold text-ink">Power Backup</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Contact */}
-        <div className="poster-border rounded-2xl p-8 mb-10 bg-skytape">
-          <span className="stamp-badge inline-block bg-paper px-3 py-1 text-xs mb-5">
-            Contact
-          </span>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-center gap-3">
-              <Phone className="text-coral" size={22} />
-              <div>
-                <p className="text-xs text-pencil font-medium">Phone</p>
-                <p className="font-mono font-bold text-ink">{hostel.contact_number}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Mail className="text-coral" size={22} />
-              <div>
-                <p className="text-xs text-pencil font-medium">Email</p>
-                <p className="font-mono font-bold text-ink">{hostel.email}</p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-6 pt-6 border-t-2 border-dashed border-ink/20">
-            <p className="text-xs text-pencil font-medium">Address</p>
-            <p className="font-semibold text-ink mt-1">{hostel.address}</p>
-          </div>
-        </div>
-
-        {/* Location */}
-        <div className="mb-10">
-          <span className="stamp-badge inline-block bg-skytape px-3 py-1 text-xs -rotate-1 mb-5">
-            Find It On The Map
-          </span>
-          <HostelMap
-            latitude={hostel.latitude}
-            longitude={hostel.longitude}
-            hostelName={hostel.hostel_name}
-          />
-        </div>
-
-        {/* Rooms */}
-        <div className="mb-10">
-          <span className="stamp-badge inline-block bg-marigold px-3 py-1 text-xs -rotate-1 mb-6">
-            Available Rooms
-          </span>
-
-          {rooms.length === 0 ? (
-            <div className="text-center py-12 poster-border rounded-2xl bg-skytape">
-              <p className="font-display text-lg text-ink">NO ROOMS LISTED YET</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {rooms.map((room) => (
-                <div key={room.id} className="poster-border hard-shadow-sm rounded-2xl p-6 bg-paper">
-                  <h3 className="font-display text-lg text-ink mb-3">
-                    {room.room_type.toUpperCase()}
-                  </h3>
-
-                  <div className="space-y-1.5 mb-4 text-sm">
-                    <p className="text-pencil"><span className="font-semibold text-ink">Sharing:</span> {room.sharing_type}</p>
-                    <p className="text-pencil"><span className="font-semibold text-ink">Total Beds:</span> {room.total_beds}</p>
-                    <p className="text-pencil">
-                      <span className="font-semibold text-ink">Available:</span>{" "}
-                      <span className={room.available_beds > 0 ? "text-green-600 font-bold" : "text-coral font-bold"}>
-                        {room.available_beds}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 mb-4">
-                    {room.ac && <span className="stamp-badge text-[10px] px-2 py-1 bg-skytape">AC</span>}
-                    {room.attached_bathroom && <span className="stamp-badge text-[10px] px-2 py-1 bg-mint">BATH</span>}
-                  </div>
-
-                  <div className="pt-4 border-t-2 border-dashed border-ink/15 flex justify-between items-center">
-                    <div>
-                      <p className="text-xs text-pencil font-medium">Per Month</p>
-                      <span className="font-mono font-bold text-xl text-coral">₹{room.price.toLocaleString("en-IN")}</span>
-                    </div>
-                    <button
-                      onClick={() => handleBooking(room.id)}
-                      disabled={room.available_beds <= 0}
-                      className={`btn-poster px-4 py-2.5 text-sm ${
-                        room.available_beds > 0
-                          ? "bg-ink text-white hard-shadow-sm"
-                          : "bg-pencil-light text-white opacity-60 cursor-not-allowed"
-                      }`}
+              {rooms.length === 0 ? (
+                <div className="poster-border rounded-2xl p-10 bg-skytape text-center">
+                  <p className="font-display text-lg text-ink">NO ROOMS CURRENTLY LISTED</p>
+                  <p className="text-pencil text-sm mt-1">Please check back soon or contact the warden directly.</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-5">
+                  {rooms.map((room) => (
+                    <div
+                      key={room.id}
+                      className="bg-paper poster-border hard-shadow-sm rounded-2xl p-6 flex flex-col justify-between"
                     >
-                      {room.available_beds > 0 ? "Book Now" : "Full"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-display text-lg text-ink">
+                            {room.room_type}
+                          </h3>
+                          <span
+                            className={`stamp-badge text-[10px] px-2 py-0.5 font-bold ${
+                              room.available_beds > 0 ? "bg-mint text-ink" : "bg-coral text-white"
+                            }`}
+                          >
+                            {room.available_beds > 0 ? `${room.available_beds} Beds Free` : "Full"}
+                          </span>
+                        </div>
 
-        {/* Reviews */}
-        <div className="mb-16">
-          <div className="flex items-center justify-between mb-8">
-            <span className="stamp-badge inline-block bg-coral text-white px-3 py-1 text-xs rotate-1">
-              Reviews
-            </span>
-            <div className="flex items-center gap-2">
-              <div className="flex text-marigold">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={18} fill="currentColor" className={i < Math.round(hostel.rating || 0) ? "" : "text-pencil-light"} />
-                ))}
-              </div>
-              <span className="font-display text-xl text-ink">{hostel.rating || "N/A"}</span>
-            </div>
-          </div>
+                        <p className="text-xs text-pencil mb-4">
+                          Sharing Type: <span className="font-bold text-ink">{room.sharing_type}</span> • Total Capacity: {room.total_beds} Beds
+                        </p>
 
-          <div className="poster-border rounded-2xl p-6 mb-8 bg-skytape">
-            <h3 className="font-display text-base text-ink mb-4">SHARE YOUR EXPERIENCE</h3>
-            <form onSubmit={handleReviewSubmit} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold uppercase text-pencil block mb-2">Rating</label>
-                <select
-                  value={reviewForm.rating}
-                  onChange={(e) => setReviewForm({ ...reviewForm, rating: parseInt(e.target.value) })}
-                  className="poster-border rounded-xl p-3 w-full bg-paper font-medium"
-                >
-                  {[5, 4, 3, 2, 1].map((rate) => (
-                    <option key={rate} value={rate}>{"⭐".repeat(rate)} {rate} Stars</option>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {room.ac && (
+                            <span className="stamp-badge text-[10px] bg-skytape px-2 py-0.5 font-bold">
+                              Air Conditioned
+                            </span>
+                          )}
+                          {room.attached_bathroom && (
+                            <span className="stamp-badge text-[10px] bg-mint px-2 py-0.5 font-bold">
+                              Attached Bath
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t-2 border-dashed border-ink/15 flex justify-between items-center">
+                        <div>
+                          <p className="text-[10px] text-pencil uppercase font-bold">Rent</p>
+                          <p className="font-mono font-bold text-xl text-coral">
+                            ₹{room.price.toLocaleString("en-IN")}<span className="text-xs font-sans text-pencil font-normal">/mo</span>
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => navigate(`/booking/${room.id}`)}
+                          disabled={room.available_beds <= 0}
+                          className={`btn-poster px-5 py-2.5 text-xs font-bold hard-shadow-sm ${
+                            room.available_beds > 0
+                              ? "bg-marigold text-ink hover:bg-mint transition-colors"
+                              : "bg-pencil-light text-white opacity-50 cursor-not-allowed"
+                          }`}
+                        >
+                          {room.available_beds > 0 ? "Book Room" : "Sold Out"}
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </select>
+                </div>
+              )}
+            </div>
+
+            {/* Student Reviews Section */}
+            <div className="bg-paper poster-border hard-shadow-sm rounded-2xl p-8 space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="stamp-badge bg-coral text-white px-3 py-1 text-xs font-bold inline-block">
+                    Real Student Feedback
+                  </span>
+                  <h2 className="font-display text-2xl text-ink mt-2">
+                    STUDENT REVIEWS ({reviews.length})
+                  </h2>
+                </div>
+                <div className="flex items-center gap-1.5 text-marigold font-display text-xl text-ink">
+                  <Star size={18} fill="currentColor" className="text-marigold" />
+                  {hostel.rating || "New"}
+                </div>
               </div>
-              <div>
-                <label className="text-xs font-bold uppercase text-pencil block mb-2">Comment</label>
+
+              {/* Write a review form */}
+              <form onSubmit={handleReviewSubmit} className="bg-skytape/50 poster-border rounded-xl p-5 space-y-4">
+                <h3 className="font-display text-sm text-ink uppercase">Add Your Review</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  <label className="text-xs font-bold uppercase text-pencil">Your Rating:</label>
+                  <select
+                    value={reviewForm.rating}
+                    onChange={(e) => setReviewForm({ ...reviewForm, rating: parseInt(e.target.value) })}
+                    className="poster-border rounded-lg px-3 py-1.5 bg-paper font-bold text-xs"
+                  >
+                    {[5, 4, 3, 2, 1].map((r) => (
+                      <option key={r} value={r}>{"⭐".repeat(r)} ({r} Stars)</option>
+                    ))}
+                  </select>
+                </div>
                 <textarea
                   value={reviewForm.comment}
                   onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
-                  placeholder="Share your experience..."
-                  className="poster-border rounded-xl p-3 w-full h-24 resize-none bg-paper font-medium"
+                  placeholder="How was your experience with the food, warden, WiFi, and rooms?..."
+                  className="w-full poster-border rounded-xl p-3 text-sm font-medium bg-paper h-20 resize-none focus:outline-none focus:ring-2 focus:ring-marigold"
                   required
                 />
+                <button
+                  type="submit"
+                  className="btn-poster bg-ink text-white px-5 py-2.5 text-xs font-bold hard-shadow-sm"
+                >
+                  Submit Review
+                </button>
+              </form>
+
+              {/* Review list */}
+              <div className="space-y-4">
+                {reviews.length === 0 ? (
+                  <p className="text-pencil text-sm italic text-center py-6">
+                    No reviews yet. Be the first to leave feedback for future students!
+                  </p>
+                ) : (
+                  reviews.map((rev) => (
+                    <div key={rev.id} className="poster-border rounded-xl p-4 bg-paper/60 space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-ink">
+                          {rev.user_name || `Verified Student #${rev.user_id}`}
+                        </span>
+                        <div className="flex text-marigold">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={12}
+                              fill="currentColor"
+                              className={i < rev.rating ? "text-marigold" : "text-pencil-light"}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-xs text-pencil leading-relaxed font-medium">
+                        "{rev.review}"
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
-              <button type="submit" className="btn-poster bg-ink text-white px-6 py-2.5 hard-shadow-sm text-sm">
-                Submit Review
-              </button>
-            </form>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            {reviews.length === 0 ? (
-              <p className="text-pencil text-center py-8">No reviews yet. Be the first to review!</p>
-            ) : (
-              reviews.map((review) => (
-                <div key={review.id} className="poster-border rounded-xl p-5 bg-paper">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="font-semibold text-ink">User #{review.user_id}</p>
-                      <div className="flex text-marigold mt-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={14} fill="currentColor" className={i < review.rating ? "" : "text-pencil-light"} />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs text-pencil font-mono">
-                      {new Date(review.created_at).toLocaleDateString()}
-                    </p>
+          {/* Right Column: Contact & Location Map */}
+          <div className="md:col-span-4 space-y-6">
+            {/* Contact Card */}
+            <div className="bg-paper poster-border hard-shadow rounded-2xl p-6 space-y-4">
+              <span className="stamp-badge bg-mint text-ink text-xs px-2.5 py-1 font-bold inline-block">
+                Direct Contact
+              </span>
+              <h3 className="font-display text-lg text-ink">
+                HOSTEL WARDEN / DESK
+              </h3>
+
+              <div className="space-y-3 text-xs">
+                {hostel.contact_number && (
+                  <div className="flex items-center gap-2.5 font-medium text-ink">
+                    <Phone size={15} className="text-coral shrink-0" />
+                    <a href={`tel:${hostel.contact_number}`} className="hover:underline font-bold">
+                      {hostel.contact_number}
+                    </a>
                   </div>
-                  <p className="text-pencil">{review.review}</p>
+                )}
+                {hostel.email && (
+                  <div className="flex items-center gap-2.5 font-medium text-ink truncate">
+                    <Mail size={15} className="text-coral shrink-0" />
+                    <a href={`mailto:${hostel.email}`} className="hover:underline">
+                      {hostel.email}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Map Card */}
+            {hostel.latitude && hostel.longitude ? (
+              <div className="bg-paper poster-border hard-shadow rounded-2xl p-5 space-y-3">
+                <span className="stamp-badge bg-skytape text-ink text-xs px-2.5 py-1 font-bold inline-block">
+                  Location Pin
+                </span>
+                <h3 className="font-display text-base text-ink">
+                  MAP VIEW
+                </h3>
+                <div className="h-64 rounded-xl overflow-hidden poster-border">
+                  <HostelMap latitude={hostel.latitude} longitude={hostel.longitude} />
                 </div>
-              ))
-            )}
+                <p className="text-[11px] text-pencil">
+                  {hostel.address}, {hostel.area}, {hostel.city}
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

@@ -23,8 +23,18 @@ def _build_dashboard_stats(db: Session, owner_id: int):
     ).all()
 
     hostel_ids = [h.id for h in hostels]
-
     total_hostels = len(hostels)
+
+    if not hostel_ids:
+        return {
+            "total_hostels": 0,
+            "total_rooms": 0,
+            "total_bookings": 0,
+            "available_beds": 0,
+            "occupied_beds": 0,
+            "average_rating": 0.0,
+            "revenue": 0
+        }
 
     total_rooms = db.query(Room).filter(
         Room.hostel_id.in_(hostel_ids)

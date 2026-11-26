@@ -28,7 +28,6 @@ def create_room(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     hostel = db.query(Hostel).filter(
         Hostel.id == room.hostel_id
     ).first()
@@ -39,7 +38,7 @@ def create_room(
             detail="Hostel not found"
         )
 
-    if hostel.owner_id != current_user.id:
+    if hostel.owner_id != current_user.id and current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=403,
             detail="You can add rooms only to your own hostel."
@@ -61,6 +60,8 @@ def create_room(
     db.refresh(new_room)
 
     return new_room
+
+
 # ---------------- Get All Rooms ----------------
 
 @router.get("/", response_model=list[RoomResponse])
@@ -68,12 +69,15 @@ def get_all_rooms(db: Session = Depends(get_db)):
     rooms = db.query(Room).all()
     return rooms
 
+
 # ---------------- Get Rooms by Hostel ID ----------------
 
 @router.get("/hostel/{hostel_id}", response_model=list[RoomResponse])
 def get_rooms_by_hostel(hostel_id: int, db: Session = Depends(get_db)):
     rooms = db.query(Room).filter(Room.hostel_id == hostel_id).all()
     return rooms
+
+
 # ---------------- Get Room By ID ----------------
 
 @router.get("/{room_id}", response_model=RoomResponse)
@@ -90,6 +94,8 @@ def get_room_by_id(
         )
 
     return room
+
+
 # ---------------- Update Room ----------------
 
 @router.put("/{room_id}", response_model=RoomResponse)
@@ -111,7 +117,7 @@ def update_room(
         Hostel.id == db_room.hostel_id
     ).first()
 
-    if hostel.owner_id != current_user.id:
+    if hostel.owner_id != current_user.id and current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=403,
             detail="You can update only your own rooms."
@@ -129,6 +135,8 @@ def update_room(
     db.refresh(db_room)
 
     return db_room
+
+
 # ---------------- Delete Room ----------------
 
 @router.delete("/{room_id}")
@@ -149,7 +157,7 @@ def delete_room(
         Hostel.id == db_room.hostel_id
     ).first()
 
-    if hostel.owner_id != current_user.id:
+    if hostel.owner_id != current_user.id and current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=403,
             detail="You can delete only your own rooms."

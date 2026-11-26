@@ -1,6 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { Building2 } from "lucide-react";
 import api from "../../services/api";
 import ImageUpload from "../../components/ImageUpload";
 import LocationPicker from "../../components/map/LocationPicker";
@@ -37,6 +38,25 @@ function AddHostel() {
   const [form, setForm] = useState(BLANK_FORM);
   const [saving, setSaving] = useState(false);
 
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center bg-skytape px-4">
+        <div className="text-center poster-border hard-shadow rounded-2xl bg-paper p-10 max-w-md">
+          <Building2 size={36} className="mx-auto text-ink mb-3" />
+          <h2 className="font-display text-2xl text-ink">PLEASE LOG IN</h2>
+          <p className="text-pencil mt-2 mb-6 text-sm">
+            You must be logged in as a hostel owner to publish a listing.
+          </p>
+          <Link to="/login" className="btn-poster inline-block bg-marigold text-ink px-6 py-3 hard-shadow-sm font-bold text-sm">
+            Sign In As Owner
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
@@ -60,10 +80,10 @@ function AddHostel() {
   };
 
   return (
-    <div className="bg-paper min-h-screen">
+    <div className="bg-paper min-h-screen pb-20">
       <div className="bg-ink border-b-[3px] border-ink py-12">
         <div className="max-w-2xl mx-auto px-6">
-          <span className="stamp-badge inline-block bg-marigold text-ink px-3 py-1 text-xs -rotate-2">
+          <span className="stamp-badge inline-block bg-marigold text-ink px-3 py-1 text-xs -rotate-2 font-bold">
             New Listing
           </span>
           <h1 className="font-display text-3xl md:text-4xl text-white mt-4">
@@ -77,12 +97,13 @@ function AddHostel() {
           <div>
             <label className="text-xs font-bold uppercase text-pencil block mb-2">Hostel Name</label>
             <input
+              type="text"
               name="hostel_name"
-              placeholder="e.g. Sunrise PG"
               value={form.hostel_name}
               onChange={handleChange}
+              placeholder="e.g. Sri Lakshmi Luxury PG"
               required
-              className="poster-border rounded-xl p-3 w-full font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+              className="w-full poster-border rounded-xl p-3 font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
             />
           </div>
 
@@ -90,10 +111,10 @@ function AddHostel() {
             <label className="text-xs font-bold uppercase text-pencil block mb-2">Description</label>
             <textarea
               name="description"
-              placeholder="What makes your hostel a good fit for students?"
               value={form.description}
               onChange={handleChange}
-              className="poster-border rounded-xl p-3 w-full h-24 resize-none font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+              placeholder="Describe your hostel, rules, food timings, warden contact..."
+              className="w-full poster-border rounded-xl p-3 h-28 resize-none font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
             />
           </div>
 
@@ -101,23 +122,25 @@ function AddHostel() {
             <div>
               <label className="text-xs font-bold uppercase text-pencil block mb-2">City</label>
               <input
+                type="text"
                 name="city"
-                placeholder="Hyderabad"
                 value={form.city}
                 onChange={handleChange}
+                placeholder="Hyderabad"
                 required
-                className="poster-border rounded-xl p-3 w-full font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+                className="w-full poster-border rounded-xl p-3 font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase text-pencil block mb-2">Area</label>
+              <label className="text-xs font-bold uppercase text-pencil block mb-2">Area / Locality</label>
               <input
+                type="text"
                 name="area"
-                placeholder="Gachibowli"
                 value={form.area}
                 onChange={handleChange}
+                placeholder="Gachibowli"
                 required
-                className="poster-border rounded-xl p-3 w-full font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+                className="w-full poster-border rounded-xl p-3 font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
               />
             </div>
           </div>
@@ -125,12 +148,13 @@ function AddHostel() {
           <div>
             <label className="text-xs font-bold uppercase text-pencil block mb-2">Full Address</label>
             <input
+              type="text"
               name="address"
-              placeholder="Street, landmark, pin code"
               value={form.address}
               onChange={handleChange}
+              placeholder="Plot No. 42, Near Tech Park"
               required
-              className="poster-border rounded-xl p-3 w-full font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+              className="w-full poster-border rounded-xl p-3 font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
             />
           </div>
 
@@ -138,35 +162,34 @@ function AddHostel() {
             <div>
               <label className="text-xs font-bold uppercase text-pencil block mb-2">Phone</label>
               <input
+                type="tel"
                 name="contact_number"
-                placeholder="9876543210"
                 value={form.contact_number}
                 onChange={handleChange}
+                placeholder="9876543210"
                 required
-                className="poster-border rounded-xl p-3 w-full font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+                className="w-full poster-border rounded-xl p-3 font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
               />
             </div>
             <div>
-              <label className="text-xs font-bold uppercase text-pencil block mb-2">Email</label>
+              <label className="text-xs font-bold uppercase text-pencil block mb-2">Contact Email</label>
               <input
-                name="email"
                 type="email"
-                placeholder="hostel@example.com"
+                name="email"
                 value={form.email}
                 onChange={handleChange}
+                placeholder="owner@example.com"
                 required
-                className="poster-border rounded-xl p-3 w-full font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
+                className="w-full poster-border rounded-xl p-3 font-medium focus:outline-none focus:ring-2 focus:ring-marigold"
               />
             </div>
           </div>
 
           <div>
+            <label className="text-xs font-bold uppercase text-pencil block mb-2">Pin on Map (Optional)</label>
             <LocationPicker
-              value={
-                form.latitude && form.longitude
-                  ? { lat: form.latitude, lng: form.longitude }
-                  : null
-              }
+              latitude={form.latitude}
+              longitude={form.longitude}
               onChange={({ lat, lng }) =>
                 setForm({ ...form, latitude: lat, longitude: lng })
               }
@@ -199,21 +222,21 @@ function AddHostel() {
           <button
             type="submit"
             disabled={saving}
-            className="btn-poster w-full bg-marigold text-ink py-3.5 hard-shadow-sm disabled:opacity-60"
+            className="btn-poster w-full bg-marigold text-ink py-3.5 hard-shadow-sm font-bold text-sm disabled:opacity-60"
           >
-            {saving ? "Adding..." : "Add Hostel"}
+            {saving ? "Publishing..." : "Add Hostel Listing"}
           </button>
         </form>
 
         {hostelId && (
-          <>
+          <div className="mt-8 space-y-4">
             <ImageUpload hostelId={hostelId} />
-            <div className="mt-6 text-center">
-              <Link to={`/owner/hostels/${hostelId}/add-room`} className="btn-poster inline-block bg-ink text-white px-6 py-3 hard-shadow-sm">
-                Now Add a Room →
+            <div className="text-center pt-4">
+              <Link to={`/owner/hostels/${hostelId}/add-room`} className="btn-poster inline-block bg-ink text-white px-8 py-3.5 hard-shadow-sm font-bold text-sm">
+                Now Add a Room to This Hostel →
               </Link>
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

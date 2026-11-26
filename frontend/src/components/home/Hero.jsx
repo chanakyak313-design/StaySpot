@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import CountUp from "react-countup";
+import CountUpComponent from "react-countup";
 import { ArrowRight, MapPin, IndianRupee } from "lucide-react";
 import { getStats } from "../../services/statsService";
+
+const CountUp = CountUpComponent?.default ?? CountUpComponent;
 
 function Hero() {
   const navigate = useNavigate();

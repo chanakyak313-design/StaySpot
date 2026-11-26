@@ -9,17 +9,25 @@ def _serialize(hostels: list[Hostel]) -> list[dict]:
 
     for hostel in hostels:
         min_price = min((r.price for r in hostel.rooms), default=None)
+        image_url = hostel.images[0].image_url if hostel.images else "https://picsum.photos/seed/hostel/600/400"
 
         data.append(
             {
+                "id": hostel.id,
                 "name": hostel.hostel_name,
+                "hostel_name": hostel.hostel_name,
                 "city": hostel.city,
                 "area": hostel.area,
+                "address": hostel.address,
                 "price": min_price,
                 "wifi": hostel.wifi,
                 "food": hostel.food,
                 "parking": hostel.parking,
                 "rating": hostel.rating,
+                "image": image_url,
+                "image_url": image_url,
+                "images": [{"image_url": image_url}],
+                "rooms": [{"price": min_price}] if min_price else [],
             }
         )
 
@@ -27,12 +35,6 @@ def _serialize(hostels: list[Hostel]) -> list[dict]:
 
 
 def recommend_hostels_by_filters(db: Session, filters: dict) -> list[dict]:
-    """
-    Builds a hostel search from structured filters (as extracted by Gemini
-    from a natural-language question) rather than a hardcoded city list or
-    a single regex - so "near Gachibowli under 6k with AC" actually works,
-    not just "Hyderabad" + a bare number.
-    """
     query = db.query(Hostel)
     needs_room_join = False
 
@@ -80,17 +82,24 @@ def recommend_hostels_by_filters(db: Session, filters: dict) -> list[dict]:
 
 
 def recommend_hostels_basic(db: Session, question: str) -> list[dict]:
-    """
-    Simple keyword/regex fallback used only if Gemini-based filter
-    extraction is unavailable (bad key, quota, network). Deliberately
-    dependency-free so the search never goes completely blank.
-    """
     query = db.query(Hostel)
     q = question.lower()
+    has_room_join = False
 
+    # City detection
+    cities = ["hyderabad", "bangalore", "bengaluru", "pune", "mumbai", "delhi", "chennai", "kolkata"]
+    for c in cities:
+        if c in q:
+            match_city = "Bangalore" if c == "bengaluru" else c.capitalize()
+            query = query.filter(Hostel.city.ilike(f"%{match_city}%"))
+            break
+
+    # Price detection
     price = re.search(r'(\d{3,6})', q)
     if price:
-        query = query.join(Room).filter(Room.price <= int(price.group(1)))
+        query = query.join(Room)
+        has_room_join = True
+        query = query.filter(Room.price <= int(price.group(1)))
 
     if "wifi" in q:
         query = query.filter(Hostel.wifi.is_(True))
@@ -101,20 +110,24 @@ def recommend_hostels_basic(db: Session, question: str) -> list[dict]:
     if "parking" in q:
         query = query.filter(Hostel.parking.is_(True))
 
+    if "ac" in q:
+        if not has_room_join:
+            query = query.join(Room)
+            has_room_join = True
+        query = query.filter(Room.ac.is_(True))
+
     hostels = query.distinct().limit(10).all()
+    # If no results from strict regex, return top-rated hostels
+    if not hostels:
+        hostels = db.query(Hostel).order_by(Hostel.rating.desc()).limit(6).all()
+
     return _serialize(hostels)
 
 
 def recommend_hostels(db: Session, question: str, filters: dict | None = None) -> list[dict]:
-    """
-    Main entry point: uses structured filters when available (from Gemini
-    extraction), otherwise falls back to basic keyword matching.
-    """
     if filters and any(filters.values()):
-        # Gemini understood something concrete - trust it fully, even if
-        # that means zero results. That's the honest answer to what the
-        # student actually asked for, not a reason to quietly widen the
-        # search behind their back.
-        return recommend_hostels_by_filters(db, filters)
+        results = recommend_hostels_by_filters(db, filters)
+        if results:
+            return results
 
     return recommend_hostels_basic(db, question)

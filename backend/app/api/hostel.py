@@ -29,10 +29,10 @@ def create_hostel(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role.lower() != "owner":
+    if current_user.role.lower() not in ("owner", "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only hostel owners can create hostels."
+            detail="Only hostel owners or admins can create hostels."
         )
 
     new_hostel = Hostel(
@@ -72,7 +72,10 @@ def get_all_hostels(
     parking: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Hostel)
+    query = db.query(Hostel).options(
+        joinedload(Hostel.rooms),
+        joinedload(Hostel.images)
+    )
 
     if city:
         query = query.filter(Hostel.city.ilike(f"%{city}%"))
@@ -89,13 +92,10 @@ def get_all_hostels(
     if parking is not None:
         query = query.filter(Hostel.parking == parking)
 
-    return query.all()
+    return query.distinct().all()
 
 
 # ---------------- Advanced Search ----------------
-# NOTE: this must be registered BEFORE /{hostel_id}, otherwise FastAPI
-# matches "/hostels/search" against the /{hostel_id} route first and
-# tries (and fails) to parse "search" as an integer.
 
 @router.get("/search", response_model=list[HostelResponse])
 def search_hostels(
@@ -110,7 +110,7 @@ def search_hostels(
     sharing_type: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(Hostel).join(Room)
+    query = db.query(Hostel).outerjoin(Room)
 
     if city:
         query = query.filter(Hostel.city.ilike(f"%{city}%"))
@@ -140,7 +140,10 @@ def search_hostels(
         query = query.filter(Room.sharing_type.ilike(f"%{sharing_type}%"))
 
     hostels = (
-        query.options(joinedload(Hostel.rooms))
+        query.options(
+            joinedload(Hostel.rooms),
+            joinedload(Hostel.images)
+        )
         .distinct()
         .all()
     )
@@ -157,7 +160,10 @@ def get_hostel_by_id(
 ):
     hostel = (
         db.query(Hostel)
-        .options(joinedload(Hostel.rooms))
+        .options(
+            joinedload(Hostel.rooms),
+            joinedload(Hostel.images)
+        )
         .filter(Hostel.id == hostel_id)
         .first()
     )
@@ -190,7 +196,7 @@ def update_hostel(
             detail="Hostel not found"
         )
 
-    if hostel.owner_id != current_user.id:
+    if hostel.owner_id != current_user.id and current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=403,
             detail="You can update only your own hostel."
@@ -236,7 +242,7 @@ def delete_hostel(
             detail="Hostel not found"
         )
 
-    if hostel.owner_id != current_user.id:
+    if hostel.owner_id != current_user.id and current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=403,
             detail="You can delete only your own hostel."
@@ -248,4 +254,3 @@ def delete_hostel(
     return {
         "message": "Hostel deleted successfully."
     }
-

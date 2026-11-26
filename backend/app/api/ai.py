@@ -4,7 +4,7 @@ import logging
 
 from app.database.database import get_db
 from app.ai.recommendation import recommend_hostels
-from app.ai.chatbot import ask_ai
+from app.ai.chatbot import ask_ai, extract_filters, build_structured_response
 
 logger = logging.getLogger("stayspot.ai")
 
@@ -16,22 +16,16 @@ router = APIRouter(
 
 @router.post("/recommend")
 def ai_recommend(data: dict, db: Session = Depends(get_db)):
-
     query = data.get("query", "")
 
-    hostels = recommend_hostels(db, query)
+    filters = extract_filters(query)
+    hostels = recommend_hostels(db, query, filters=filters)
 
     try:
         answer = ask_ai(question=query, hostels=hostels)
+        payload = build_structured_response(query, hostels, ai_text=answer, fallback=False)
     except Exception:
-        # Gemini API can fail for many reasons (bad key, quota, network,
-        # a retired model ID) - don't crash the request, fall back to the
-        # raw hostel matches. The real reason is logged below so it shows
-        # up in the uvicorn console instead of vanishing silently.
         logger.exception("Gemini call failed in /ai/recommend")
-        return {
-            "response": "AI assistant is temporarily unavailable. Here are matching hostels based on your query.",
-            "hostels": hostels,
-        }
+        payload = build_structured_response(query, hostels, ai_text=None, fallback=True)
 
-    return {"response": answer}
+    return payload
