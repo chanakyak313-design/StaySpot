@@ -1,0 +1,10 @@
+{
+  "name": "stayspot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "StaySpot - AI-Powered Real-Time Hostel Discovery & Vacancy Management",
+  "scripts": {
+    "build": "npm --prefix frontend install && npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev"
+  }
+}
