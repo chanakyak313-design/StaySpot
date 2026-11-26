@@ -18,9 +18,9 @@ def get_client():
     global _client
     if _client is not None:
         return _client
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        logger.info("GEMINI_API_KEY not configured. AI will run in graceful fallback mode.")
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key or not api_key.startswith("AIzaSy"):
+        logger.info("Valid GEMINI_API_KEY (starting with 'AIzaSy') not configured. Running in fast instant matching mode.")
         return None
     try:
         from google import genai
@@ -30,7 +30,7 @@ def get_client():
         logger.warning("Failed to initialize Google GenAI Client: %s", e)
         return None
 
-MODEL = "gemini-flash-latest"
+MODEL = "gemini-2.5-flash"
 
 
 def extract_filters(question: str) -> dict | None:
