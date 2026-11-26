@@ -32,11 +32,14 @@ from app.api.chatbot import router as chatbot_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Creates any tables that don't exist yet - safe to run every startup,
-    # it never touches tables that are already there. This means a fresh
-    # Postgres database (just `CREATE DATABASE stayspot_db;`, nothing else)
-    # works immediately without a separate migration step.
+    # Creates any tables that don't exist yet
     Base.metadata.create_all(bind=engine)
+    # Auto-seed the database if it is empty (e.g. on Render/cloud deployments)
+    try:
+        from seed import run as seed_db
+        seed_db(force=False)
+    except Exception as e:
+        print(f"Auto-seed check: {e}")
     yield
 
 
